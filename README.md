@@ -17,3 +17,7 @@ Each button is assigned a key (e.g. a letter or number).  Use it like a standard
 Serial Mode
 -----------
 Emits ASCII text over serial-USB.  Use it like a command-line process.  Emits microsecond timestamps and button states, whenever a button is pressed.
+
+About
+=====
+The code here is being built with [platformio](http://platformio.org/#!/), a cross-platform command-line based build tool and dependency manager.  So far platformio looks very promising.

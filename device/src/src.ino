@@ -1,8 +1,24 @@
-//
-// USB Response Boxes for Psychological Experiments
-//
-#include <usb_serial.h>
+/* Simple USB Mouse Example
+   Teensy becomes a USB mouse and moves the cursor in a triangle
 
-void setup() {}
-void loop() {}
+   You must select Mouse from the "Tools > USB Type" menu
 
+   This example code is in the public domain.
+*/
+
+void setup() { } // no setup needed
+void loop() {
+    int i;
+    for (i=0; i<40; i++) {
+        Mouse.move(2, -1);
+        delay(25);
+    }
+    for (i=0; i<40; i++) {
+        Mouse.move(2, 2);
+        delay(25);
+    }
+    for (i=0; i<40; i++) {
+        Mouse.move(-4, -1);
+        delay(25);
+    }
+}
