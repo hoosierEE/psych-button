@@ -31,4 +31,4 @@
  .pioenvs/teensy31/FrameworkArduino/elapsedMillis.h \
  .pioenvs/teensy31/FrameworkArduino/Arduino.h \
  .pioenvs/teensy31/FrameworkArduino/IntervalTimer.h \
- src/../lib/EventTimer.h
+ src/../lib/SimpleSwitch/SimpleSwitch.h
