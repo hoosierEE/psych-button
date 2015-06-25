@@ -41,13 +41,12 @@ void setup() {
 void loop() {
     // update timers
     uint32_t now = micros(); // global time for this loop
-
     // update inputs
     for (uint8_t i = 0; i < NUM_SWITCHES; ++i) {
         switches[i].update(now); // synchronized update for all switches
     }
 
-    // check for changes
+    // scan for changes
     for (uint8_t i = 0; i < NUM_SWITCHES; ++i) {
         k.keys[i] = switches[i].pressed(); // removes a press from the queue
         if (k.prev[i] != k.keys[i]) {
@@ -56,7 +55,9 @@ void loop() {
     }
 
     // if there were any changes, send an update
-    if (k.changed)
+    if (k.changed) {
+        k.changed = false; // reset the flag
         render(now);
+    }
 }
 
