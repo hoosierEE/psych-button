@@ -22,9 +22,10 @@ typedef struct {
 } KeyState;
 KeyState k;
 
-void render(uint32_t now)
+void serialize(uint32_t now)
 {
-    // print the switch states
+    // print the switch states in this format:
+    // (s0 s1 s2 s3 time)
     Serial.print("(");
     for (uint8_t i = 0; i < NUM_SWITCHES; ++i) {
         Serial.print(k.keys[i]);
@@ -32,6 +33,11 @@ void render(uint32_t now)
     }
     Serial.print(now); // print the time
     Serial.println(")"); // delimiter and newline
+}
+
+void keyboardify(uint32_t now)
+{
+    // emit USB keyboard events
 }
 
 void setup() {
@@ -57,7 +63,8 @@ void loop() {
     // if there were any changes, send an update
     if (k.changed) {
         k.changed = false; // reset the flag
-        render(now);
+        serialize(now);
+        keyboardify(now);
     }
 }
 
