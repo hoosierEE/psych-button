@@ -3,10 +3,11 @@
 // And listen for incoming events, which will have this format:
 // (s0 s1 s2 s3 timestamp)
 // ^                     ^ Note each message is delimited by an open and closed parenthesis.
+// Client applications may use this for rudimentary error-checking.
 
 #include "../lib/SimpleSwitch/SimpleSwitch.h"
 
-// switches
+// HARDWARE
 const uint8_t NUM_SWITCHES{4};
 SimpleSwitch s0(0);
 SimpleSwitch s1(1);
@@ -14,57 +15,53 @@ SimpleSwitch s2(2);
 SimpleSwitch s3(3);
 SimpleSwitch switches[NUM_SWITCHES]{s0,s1,s2,s3};
 
-// switch states
+const char letters[NUM_SWITCHES]{'a','b','c','d'}; // friendly names for buttons
+
+// MODEL
 typedef struct {
     bool keys[NUM_SWITCHES];
-    bool prev[NUM_SWITCHES];
+    bool prev[NUM_SWITCHES]; // used to determine changes
     bool changed;
 } KeyState;
-KeyState k;
+KeyState key;
 
-void serialize(uint32_t now)
+// RENDER
+void serialize(uint32_t now, KeyState state)
 {
-    // print the switch states in this format:
-    // (s0 s1 s2 s3 time)
-    Serial.print("(");
+    // Send all the buttons (in hex) and a timestamp (in decimal)
+    char result{0};
     for (uint8_t i = 0; i < NUM_SWITCHES; ++i) {
-        Serial.print(k.keys[i]);
-        Serial.print(", ");
+        result |= state.keys[i] << i;
     }
-    Serial.print(now); // print the time
-    Serial.println(")"); // delimiter and newline
-}
-
-void keyboardify(uint32_t now)
-{
-    // emit USB keyboard events
+    Serial.print(result, HEX); // '0' through 'F'
+    Serial.print(" "); // easier for human to read
+    Serial.println(now);
 }
 
 void setup() {
     Serial.begin(115200);
+    Keyboard.begin();
 }
 
 void loop() {
-    // update timers
-    uint32_t now = micros(); // global time for this loop
-    // update inputs
+    // UPDATE
+    uint32_t now = micros();
     for (uint8_t i = 0; i < NUM_SWITCHES; ++i) {
-        switches[i].update(now); // synchronized update for all switches
-    }
-
-    // scan for changes
-    for (uint8_t i = 0; i < NUM_SWITCHES; ++i) {
-        k.keys[i] = switches[i].pressed(); // removes a press from the queue
-        if (k.prev[i] != k.keys[i]) {
-            k.changed |= true; // set a flag if any of the inputs changed
+        switches[i].update(now);
+        key.keys[i] = switches[i].pressed();
+        if (key.prev[i] != key.keys[i]) {
+            Keyboard.write(letters[i]); // do this the instant they arrive
+            key.changed = true;
         }
     }
 
     // if there were any changes, send an update
-    if (k.changed) {
-        k.changed = false; // reset the flag
-        serialize(now);
-        keyboardify(now);
+    if (key.changed) {
+        serialize(now, key); // send these in a batch
+        for (uint8_t i = 0; i < NUM_SWITCHES; ++i) {
+            key.prev[i] = key.keys[i]; // make previous same as current
+        }
+        key.changed = false; // reset so we don't send the same update twice
     }
 }
 
