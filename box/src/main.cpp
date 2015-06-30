@@ -17,14 +17,14 @@ SimpleSwitch s3(3);
 // MODELS
 SimpleSwitch switches[NumSwitches]{s0,s1,s2,s3};
 const char letters[NumSwitches]{'a','b','c','d'}; // friendly names for buttons
-typedef struct {
+struct KeyState {
     bool keys[NumSwitches];
     bool prev[NumSwitches];
     bool changed;
-} KeyState;
-KeyState key;
+};
+struct KeyState key;
 
-void serialize(uint32_t now, KeyState *state)
+void serialize(uint32_t now, struct KeyState *state)
 {
     // Send all the buttons (in hex) and a timestamp (in decimal)
     char result{0};
