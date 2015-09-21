@@ -48,7 +48,6 @@ void serialize(uint32_t now, struct KeyState *state)
     Serial.println(now, HEX); // hex is about 12% faster on average
 }
 
-// RENDER
 void setup() {
     Serial.begin(115200);
     Keyboard.begin();
@@ -66,6 +65,7 @@ void loop() {
         }
     }
 
+    // RENDER
     // if there were any changes, send an update
     if (ks.changed) {
         serialize(now, &ks); // send these in a batch
