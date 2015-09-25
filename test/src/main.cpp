@@ -4,28 +4,32 @@
 // to time-align different data sources. If each connected device
 // follows this protocol, a network of devices can operate without
 // a common clock, but produce synchronized timing data.
-#include <Arduino.h>
-#include <Bounce.h>
+#include <SimpleSwitch.h>
 
 // MODEL
 elapsedMicros loop_timer;
-const uint9_t NUM_BUTTONS{4};
-uint8_t button_pins[NUM_BUTTONS] = { 2, 3, 4, 5 }; // Teensy digital pins
+const uint8_t NUM_BUTTONS{4};
+uint8_t button_pins[NUM_BUTTONS]{2,3,4,5}; // Teensy digital pins
+const char letters[NUM_BUTTONS]{'a','b','c','d'}; // for keyboard use
 
 const uint8_t DEBOUNCE_TIME{100}; // ms
-Bounce buttons[NUM_BUTTONS] =
+SimpleSwitch buttons[NUM_BUTTONS]=
 {
-    Bounce(button_pins[0],DEBOUNCE_TIME),
-    Bounce(button_pins[1],DEBOUNCE_TIME),
-    Bounce(button_pins[2],DEBOUNCE_TIME),
-    Bounce(button_pins[3],DEBOUNCE_TIME)
+    SimpleSwitch(button_pins[0]),
+    SimpleSwitch(button_pins[1]),
+    SimpleSwitch(button_pins[2]),
+    SimpleSwitch(button_pins[3])
 };
 
-// FUNCTIONS
+struct KeyState {
+    bool keys[NUM_BUTTONS];
+    bool changed;
+} ks;
 
+// FUNCTIONS
 // PROGRAM
 void setup() {
-    for (uint8_t i = 0; i < NUM_BUTTONS; ++i) {
+    for (uint8_t i{0}; i < NUM_BUTTONS; ++i) {
         // initialize buttons
         pinMode(button_pins[i], INPUT_PULLUP);
     }
@@ -42,13 +46,19 @@ void loop() {
     // UPDATE
     // Gather input data as fast as possible.
     // input sources include buttons, Serial, etc.
+    //uint32_t now{micros()};
+    for (uint8_t i{0}; i < NUM_BUTTONS; ++i) {
+        buttons[i].update();
+        if (buttons[i].pressed()) {
+            Keyboard.write(letters[i]);
+        }
+    }
 
-    
     // RENDER
     // Send output data at a controlled rate.
     const uint16_t LOOP_TIME{10000}; // us
-    if (timer >= LOOP_TIME) {
-        timer -= LOOP_TIME;
+    if (loop_timer >= LOOP_TIME) {
+        loop_timer -= LOOP_TIME;
         // output data now
     }
 }
