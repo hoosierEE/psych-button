@@ -90,4 +90,4 @@ Source code built with [platformio](http://platformio.org/#!/), a cross-platform
 Related Reading
 ---------------
 * [Synchronization Explained](http://www.ni.com/white-paper/11369/en/)
-* [Synchronization Concepts](http://faculty.spokanefalls.edu/InetShare/AutoWebs/dannym/Digital%20Audio%20II/Supplemental%20Info/Synchronization%20Concepts.pdf)
+* [Precision Time Protocol](https://en.wikipedia.org/wiki/Precision_Time_Protocol)
