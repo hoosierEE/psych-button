@@ -2,15 +2,15 @@ Psych-Button
 ============
 USB response boxes with real-time accuracy.
 
-This repository contains code, schematics, and plans for a USB device which allows for taking precise timing measurements.  It is intended for use in psychological experiments with human subjects.  A typical use case is to play a slideshow for the subject and ask them to record their responses to the visual stimuli using the buttons.  Researchers commonly want to temporally synchronize the slideshow with the buttons.
+In many psychological experiments, researchers want to record subject responses to audio/video stimuli.  In many cases precise and accurate timing is required, and the operating system's time functions are inadequate.  This repo showcases how to make a USB device capable of accurate timing.
 
-This device has a single USB cable but enumerates as *two* separate USB devices: a USB Keyboard and a USB Serial interface.  The keyboard may be used for interacting directly with a program (e.g. a slideshow) and the serial interface may be used to obtain precise timing for each button press.
+This device has a single USB cable but enumerates as *two* separate USB devices: a USB Keyboard and a USB Serial interface.  The keyboard is, for all intents and purposes, identical to a standard USB keyboard with the exception that instead of 108 or more keys, it only has 4.  The Serial interface is where things start to get interesting.  This interface provides button press data but *also* precise timing data.
 
-You can use *one or both* of these USB channels, but be aware that timing information is *only* available via serial.
+Capturing this device's timing output lets you calculate both the round-trip delay and the offset for the device+PC combo.
 
 Usage (Keyboard)
 ----------------
-To use a response box as a USB keyboard, plug and play.  By default, the 4 buttons correspond to 'a', 'b','c', and 'd' keycodes.  Open a text editor and use the response box to "type" letters.
+To use a response box as a USB keyboard, plug and play.  By default, the 4 buttons correspond to 'w', 'a','s', and 'd' keycodes.  Open a text editor and use the response box to "type" letters.
 
 Usage (Serial)
 --------------

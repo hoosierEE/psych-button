@@ -10,7 +10,7 @@
 elapsedMicros loop_timer;
 const uint8_t NUM_BUTTONS{4};
 uint8_t button_pins[NUM_BUTTONS]{2,3,4,5}; // Teensy digital pins
-const char letters[NUM_BUTTONS]{'a','b','c','d'}; // for keyboard use
+const char letters[NUM_BUTTONS]{'w','a','s','d'}; // for keyboard use
 
 const uint8_t DEBOUNCE_TIME{100}; // ms
 SimpleSwitch buttons[NUM_BUTTONS]=
@@ -50,6 +50,7 @@ void loop() {
     for (uint8_t i{0}; i < NUM_BUTTONS; ++i) {
         buttons[i].update();
         if (buttons[i].pressed()) {
+            // act like a keyboard
             Keyboard.write(letters[i]);
         }
     }
