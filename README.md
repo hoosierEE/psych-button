@@ -2,11 +2,11 @@ Psych-Button
 ============
 USB response boxes with real-time accuracy.
 
-In many psychological experiments, researchers want to record subject responses to audio/video stimuli.  In many cases precise and accurate timing is required, and the operating system's time functions are inadequate.  This repo showcases how to make a USB device capable of accurate timing.
+In many psychological experiments, researchers want to record subject responses to audio/video stimuli.  In many cases precise and accurate timing is required, and the operating system's time functions are inadequate.  The code in this repository showcases how to make a USB device capable of accurate timing.
 
-This device has a single USB cable but enumerates as *two* separate USB devices: a USB Keyboard and a USB Serial interface.  The keyboard is, for all intents and purposes, identical to a standard USB keyboard with the exception that instead of 108 or more keys, it only has 4.  The Serial interface is where things start to get interesting.  This interface provides button press data but *also* precise timing data.
+The device has a single USB cable but shows up as *two* separate USB devices: a **USB Keyboard** and a **USB Serial** interface.  The keyboard is essentially the same as a standard USB keyboard with the exception that instead of 108 or more keys, it only has 4.  The Serial interface is where things start to get interesting.  This interface provides button press data but *also* precise timing data.
 
-Capturing this device's timing output lets you calculate both the round-trip delay and the offset for the device+PC combo.
+Recording data from the serial interface lets you calculate both the round-trip delay and the offset for the device+PC combo.
 
 Usage (Keyboard)
 ----------------
@@ -28,36 +28,32 @@ The serial interface provides timing information by measuring the latency betwee
     (psych-button): some more data
     (PC): 123456.588
 
-Above, `psych-button` sent some serial data to the host PC.  The PC responded with the system time.  Some time later, `psych-button` sent additional data.  The PC responded with the system time.  The second time was 1.588 seconds after the first.
+In the example above, `psych-button` sent some serial data to the host PC.  The PC responded with the system time.  Some time later, `psych-button` sent additional data.  The PC again responded with the system time.  The second time was 1.588 seconds after the first.
 
-Key to this approach is that `psych-button` compares the elapsed time given by the PC with the elapsed time as measured by its own internal clock.  Even though the PC reports 1.588 seconds elapsed, `psych-button` may show that only 1.570 seconds elapsed.  Because the mircocontroller is a single process running on hardware, its internal timing is more accurate in measuring real-world events.  The PC doesn't register an event until the USB interrupt handler runs.  Many system events influence when this happens.  From the perspective of a user-space application, USB latency is non-deterministic.
+Key to this approach is that `psych-button` compares the elapsed time given by the PC with the elapsed time as measured by its own internal clock.  Even though the PC reports 1.588 seconds elapsed, `psych-button` may show that only 1.570 seconds elapsed.  Because the mircocontroller is a single process running on dedicated hardware, its internal timing is more precise in measuring real-world events.  The PC doesn't register an event until the USB interrupt handler runs.  Many system events influence when and how quickly this happens.  From the perspective of an application, USB latency is non-deterministic.
 
 Hex Encoding
 ------------
-This device emits ASCII text via USB Serial emulation.  Use it like a command-line process.  Data is in this format:
+Serial data is sent over USB in ASCII format, where each character (e.g. `a` or `4`) is represented in one byte.  One byte is 2^4 bits which is exactly enough to encode 4 buttons.
 
-    buttons time
-
-where `buttons` is the result of a binary-to-hexadecimal conversion of the button states.  Buttons are in big-endian form: `s3 s2 s1 s0`
-
-For example, four buttons, all "on", would look like this in binary:
-
-    1 1 1 1
-
-In hex, the same four buttons, still "on", would look like this:
-
-    F
-
-Likewise, only the `s3` button on, with the rest off, would look like this in binary:
-
-    1 0 0 0
-
-...and in hex:
-
-    8
-
-Serial USB transmissions (of the button states) are therefore 4x faster.
-
+button 0 | button 1 | button 2 | button 3 | Byte Value
+---|---|---|---|---
+0 | 0 | 0 | 0 | 0
+0 | 0 | 0 | 1 | 1
+0 | 0 | 1 | 0 | 2
+0 | 0 | 1 | 1 | 3
+0 | 1 | 0 | 0 | 4
+0 | 1 | 0 | 1 | 5
+0 | 1 | 1 | 0 | 6
+0 | 1 | 1 | 1 | 7
+1 | 0 | 0 | 0 | 8
+1 | 0 | 0 | 1 | 9
+1 | 0 | 1 | 0 | a
+1 | 0 | 1 | 1 | b
+1 | 1 | 0 | 0 | c
+1 | 1 | 0 | 1 | d
+1 | 1 | 1 | 0 | e
+1 | 1 | 1 | 1 | f
 
 Buttons in Action
 -----------------
@@ -79,9 +75,9 @@ Finally, releasing the `b3` button, then releasing the `b0` button, will produce
     0 time
 
 
-That Pesky Time Value
+About That Time Value
 ---------------------
-In the above examples, `time` represents the value of microseconds in the microcontroller's clock since it received the begin signal.  Values are in the range 0 to 4294967295, inclusive.  This value is transmitted in decimal.
+In the above examples, `time` represents the value of microseconds in the microcontroller's clock since it received the begin signal.  Values are in the range 0 to 4294967295, inclusive.  This value is encoded in (normal) decimal format.
 
 notes
 -----
