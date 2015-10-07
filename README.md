@@ -12,6 +12,13 @@ Usage (Keyboard)
 ----------------
 To use a response box as a USB keyboard, plug and play.  By default, the 4 buttons correspond to 'w', 'a','s', and 'd' keycodes.  Open a text editor and use the response box to "type" letters.
 
+button | key
+---|---
+0 | 'w'
+1 | 'a'
+2 | 's'
+3 | 'd'
+
 Usage (Serial)
 --------------
 To use the serial interface, open a serial terminal using some program (e.g. [pyserial](https://github.com/pyserial/pyserial)).  Use the following settings:
@@ -21,22 +28,52 @@ To use the serial interface, open a serial terminal using some program (e.g. [py
 * no parity
 * 1 stop bit
 
-The serial interface provides timing information by measuring the latency between successive communication intervals.  This requires bidirectional communication with the serial program.  The example program responds to all response box messages with the system time to the nearest microsecond:
+### Timing Measurements
+Round-trip delay `d` and offset `t` are calculated as per the [SNTP protocol, section 5](https://tools.ietf.org/html/rfc4330#section-5):
 
-    (psych-button): some data
-    (PC): 123455.000
-    (psych-button): some more data
-    (PC): 123456.588
+    Timestamp Name          ID   When Generated
+    ------------------------------------------------------------
+    Originate Timestamp     T1   time request sent by client
+    Receive Timestamp       T2   time request received by server
+    Transmit Timestamp      T3   time reply sent by server
+    Destination Timestamp   T4   time reply received by client
 
-In the example above, `psych-button` sent some serial data to the host PC.  The PC responded with the system time.  Some time later, `psych-button` sent additional data.  The PC again responded with the system time.  The second time was 1.588 seconds after the first.
+    The roundtrip delay d and system clock offset t are defined as:
 
-Key to this approach is that `psych-button` compares the elapsed time given by the PC with the elapsed time as measured by its own internal clock.  Even though the PC reports 1.588 seconds elapsed, `psych-button` may show that only 1.570 seconds elapsed.  Because the mircocontroller is a single process running on dedicated hardware, its internal timing is more precise in measuring real-world events.  The PC doesn't register an event until the USB interrupt handler runs.  Many system events influence when and how quickly this happens.  From the perspective of an application, USB latency is non-deterministic.
+    d = (T4 - T1) - (T3 - T2)     t = ((T2 - T1) + (T3 - T4)) / 2.
 
-Hex Encoding
-------------
-Serial data is sent over USB in ASCII format, where each character (e.g. `a` or `4`) is represented in one byte.  One byte is 2^4 bits which is exactly enough to encode 4 buttons.
+This procedure is done at least once, usually before an experiment, but can be done at any point in time except during data collection.  The PC sends `psych-button` a signal to begin the timing measurement:
 
-button 0 | button 1 | button 2 | button 3 | Byte Value
+    PC: 'T'
+    PC [waits for psych-button to respond]
+    psych-button [initiate timing algorithm by sending own timestamp]: t1
+    PC [T2 = time of t1's arrival]
+    PC [T3 = time of reply]: 'K'
+    psych-button: t4
+
+where `t1` and `t4` are integer microsecond values (i.e. 1300000 == 1.3 seconds).  `T2` and `T3` depend on the PC's internal representation of system time.  For example, in Python:
+
+    import time
+    now = time.time() # floating point UNIX timestamp e.g. 1444248042.147216
+
+If using Python's `time.time()` function, convert `t1` and `t4` to seconds before doing arithmetic.
+
+The PC can now calculate `d` and `t` from `t1 T2 T3 t4` and store these values for later use.
+
+### Begin Signal
+To begin data collection, send `psych-button` a begin signal:
+
+    PC: 'B'
+    psych-button: ti
+
+where `ti` is the elapsed time since `t4`.  Note that this value will overflow after about 78 minutes, which is why running the timing measurement should be done prior!
+
+Hereafter, `psych-button` will transmit button values as it detects changes to the state of the 4 buttons.
+
+### Button Encoding
+Since we have 4 buttons, we can represent "pressed" with a 1 and "not pressed" with a 0, and encode all 4 button values in a single byte:
+
+button 3 | button 2 | button 1 | button 0 | byte representation
 ---|---|---|---|---
 0 | 0 | 0 | 0 | 0
 0 | 0 | 0 | 1 | 1
@@ -55,29 +92,20 @@ button 0 | button 1 | button 2 | button 3 | Byte Value
 1 | 1 | 1 | 0 | e
 1 | 1 | 1 | 1 | f
 
-Buttons in Action
------------------
-Rather than emit data continuously, it only sends data when it detects a change in the state of the buttons.  This means that pressing and holding the `b0` button (and no others) will result in this output:
+The state of all 4 buttons is sent during each update as a single hexadecimal character.
 
-    1 time
+Rather than emit data continuously, it only sends data when it detects a change in the state of the buttons.  This means that pressing and holding the `b0` button (and no others) will result in one line of output:
 
-> In binary, that would look like `0 0 0 1 time`
+    1
 
 Meanwhile, if you press the `b3` button, while continuing to hold `b0`, the next output will be:
 
-    9 time
-
-> In binary, that would look like `1 0 0 1 time`
+    9
 
 Finally, releasing the `b3` button, then releasing the `b0` button, will produce this output:
 
-    8 time
-    0 time
-
-
-About That Time Value
----------------------
-In the above examples, `time` represents the value of microseconds in the microcontroller's clock since it received the begin signal.  Values are in the range 0 to 4294967295, inclusive.  This value is encoded in (normal) decimal format.
+    8
+    0
 
 notes
 -----
