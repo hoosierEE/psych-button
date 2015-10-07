@@ -73,24 +73,24 @@ Hereafter, `psych-button` will transmit button values as it detects changes to t
 ### Button Encoding
 Since we have 4 buttons, we can represent "pressed" with a 1 and "not pressed" with a 0, and encode all 4 button values in a single byte:
 
-button 3 | button 2 | button 1 | button 0 | byte representation
----|---|---|---|---
-0 | 0 | 0 | 0 | 0
-0 | 0 | 0 | 1 | 1
-0 | 0 | 1 | 0 | 2
-0 | 0 | 1 | 1 | 3
-0 | 1 | 0 | 0 | 4
-0 | 1 | 0 | 1 | 5
-0 | 1 | 1 | 0 | 6
-0 | 1 | 1 | 1 | 7
-1 | 0 | 0 | 0 | 8
-1 | 0 | 0 | 1 | 9
-1 | 0 | 1 | 0 | a
-1 | 0 | 1 | 1 | b
-1 | 1 | 0 | 0 | c
-1 | 1 | 0 | 1 | d
-1 | 1 | 1 | 0 | e
-1 | 1 | 1 | 1 | f
+button 3 | button 2 | button 1 | button 0 | byte representation | notes
+---|---|---|---|---|---
+0 | 0 | 0 | 0 | 0 | no button pressed
+0 | 0 | 0 | 1 | 1 | button 0 pressed
+0 | 0 | 1 | 0 | 2 |
+0 | 0 | 1 | 1 | 3 |
+0 | 1 | 0 | 0 | 4 |
+0 | 1 | 0 | 1 | 5 | button 2 pressed
+0 | 1 | 1 | 0 | 6 |
+0 | 1 | 1 | 1 | 7 |
+1 | 0 | 0 | 0 | 8 |
+1 | 0 | 0 | 1 | 9 |
+1 | 0 | 1 | 0 | a | buttons 3 and 1 pressed
+1 | 0 | 1 | 1 | b |
+1 | 1 | 0 | 0 | c |
+1 | 1 | 0 | 1 | d |
+1 | 1 | 1 | 0 | e |
+1 | 1 | 1 | 1 | f | all buttons pressed
 
 The state of all 4 buttons is sent during each update as a single hexadecimal character.
 
