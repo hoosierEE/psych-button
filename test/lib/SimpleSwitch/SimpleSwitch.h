@@ -15,6 +15,7 @@
 class SimpleSwitch
 {
     public:
+        // Default constructor. Takes a digital pin.
         SimpleSwitch(uint8_t p)
         {
             pin = p;
@@ -27,6 +28,7 @@ class SimpleSwitch
         }
         ~SimpleSwitch() {}
 
+        // update internal state
         void update(uint32_t now = micros())
         {
             currentTime = now;
@@ -47,7 +49,9 @@ class SimpleSwitch
             }
         }
 
+        // return true once, following (update() and switch-press)
         inline bool pressed() { return getTransition(hiLoTransition); }
+        // return true once, following (update() and switch-release)
         inline bool released() { return getTransition(loHiTransition); }
 
         // Return the raw button state, which is subject to bounce.

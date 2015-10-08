@@ -47,8 +47,8 @@ class SimpleSwitch
             }
         }
 
-        inline bool pressed() { return getTransition(hiLoTransition); }
-        inline bool released() { return getTransition(loHiTransition); }
+        bool pressed() { return getTransition(hiLoTransition); }
+        bool released() { return getTransition(loHiTransition); }
 
         // Return the raw button state, which is subject to bounce.
         bool getState() { return currentState; }
@@ -60,7 +60,7 @@ class SimpleSwitch
         //
         // Takes an edge (rising or falling) BY REFERENCE and resets it.
         // Edge remains false until next update().
-        inline bool getTransition(bool& edge)
+        bool getTransition(bool& edge)
         {
             bool t = edge;
             edge = false;
