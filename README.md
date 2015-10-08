@@ -45,19 +45,19 @@ Since we have 4 buttons, we can represent "pressed" with a 1 and "not pressed" w
 |-------------------------|----------|----------|----------|----------|:---------------------:|:-----------------------:|
 | no buttons pressed      | 0        | 0        | 0        | 0        |           0           |                         |
 | button 0 pressed        | 0        | 0        | 0        | 1        |           1           |      <kbd>w</kbd>       |
-|                         | 0        | 0        | 1        | 0        |           2           |      <kbd>a</kbd>       |
-|                         | 0        | 0        | 1        | 1        |           3           |                         |
-|                         | 0        | 1        | 0        | 0        |           4           |      <kbd>s</kbd>       |
-| button 2 pressed        | 0        | 1        | 0        | 1        |           5           |                         |
-|                         | 0        | 1        | 1        | 0        |           6           |                         |
-|                         | 0        | 1        | 1        | 1        |           7           |                         |
-|                         | 1        | 0        | 0        | 0        |           8           |      <kbd>d</kbd>       |
-|                         | 1        | 0        | 0        | 1        |           9           |                         |
-| buttons 3 and 1 pressed | 1        | 0        | 1        | 0        |           a           |                         |
-|                         | 1        | 0        | 1        | 1        |           b           |                         |
-|                         | 1        | 1        | 0        | 0        |           c           |                         |
-|                         | 1        | 1        | 0        | 1        |           d           |                         |
-|                         | 1        | 1        | 1        | 0        |           e           |                         |
+| button 1 pressed        | 0        | 0        | 1        | 0        |           2           |      <kbd>a</kbd>       |
+| buttons 0 1 pressed     | 0        | 0        | 1        | 1        |           3           |                         |
+| button 2 pressed        | 0        | 1        | 0        | 0        |           4           |      <kbd>s</kbd>       |
+| buttons 0 2 pressed     | 0        | 1        | 0        | 1        |           5           |                         |
+| buttons 1 2 pressed     | 0        | 1        | 1        | 0        |           6           |                         |
+| buttons 0 1 2 pressed   | 0        | 1        | 1        | 1        |           7           |                         |
+| button 3 pressed        | 1        | 0        | 0        | 0        |           8           |      <kbd>d</kbd>       |
+| buttons 0 3 pressed     | 1        | 0        | 0        | 1        |           9           |                         |
+| (etc.)                  | 1        | 0        | 1        | 0        |           a           |                         |
+| (etc.)                  | 1        | 0        | 1        | 1        |           b           |                         |
+| (etc.)                  | 1        | 1        | 0        | 0        |           c           |                         |
+| (etc.)                  | 1        | 1        | 0        | 1        |           d           |                         |
+| (etc.)                  | 1        | 1        | 1        | 0        |           e           |                         |
 | all buttons pressed     | 1        | 1        | 1        | 1        |           f           |                         |
 
 Serial interface updates whenever there is a change in the state of any button (either pressed or released).
