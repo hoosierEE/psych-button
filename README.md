@@ -8,26 +8,6 @@ The device has a single USB cable but shows up as *two* separate USB devices: a 
 
 Recording data from the serial interface lets you calculate both the round-trip delay and the offset for the device+PC combo.
 
-Usage (Keyboard)
-----------------
-To use a response box as a USB keyboard, plug and play.  By default, the 4 buttons correspond to 'w', 'a','s', and 'd' keycodes.  Open a text editor and use the response box to "type" letters.
-
-button | key
--------|----
-0      | 'w'
-1      | 'a'
-2      | 's'
-3      | 'd'
-
-Usage (Serial)
---------------
-To use the serial interface, open a serial terminal on your computer using a program such as [pyserial](https://github.com/pyserial/pyserial).  Use the following settings:
-
-* 115200 baud
-* 8 data bits
-* no parity
-* 1 stop bit
-
 ### Timing Measurements
 Round-trip delay `d` and offset `t` are calculated as per the [SNTP protocol, section 5](https://tools.ietf.org/html/rfc4330#section-5):
 
@@ -62,7 +42,7 @@ Python Example:
 Since we have 4 buttons, we can represent "pressed" with a 1 and "not pressed" with a 0, and encode all 4 button values in a single byte:
 
 | State                   | button 3 | button 2 | button 1 | button 0 | Serial representation | Keyboard representation |
-|-------------------------|----------|----------|----------|----------|:---------------------:|-------------------------|
+|-------------------------|----------|----------|----------|----------|:---------------------:|:-----------------------:|
 | no buttons pressed      | 0        | 0        | 0        | 0        |           0           |                         |
 | button 0 pressed        | 0        | 0        | 0        | 1        |           1           |      <kbd>w</kbd>       |
 |                         | 0        | 0        | 1        | 0        |           2           |      <kbd>a</kbd>       |
@@ -84,7 +64,26 @@ Serial interface updates whenever there is a change in the state of any button (
 
 The Keyboard interface sends a `keydown` event followed by a `keyup` event when a button is first pressed.
 
-#### Serial Example
+Usage (Keyboard)
+----------------
+To use a response box as a USB keyboard, plug and play.  By default, the 4 buttons correspond to <kbd>w</kbd>, <kbd>a</kbd>, <kbd>s</kbd>, and <kbd>d</kbd> keyboard events.  Open a text editor and use the response box to "type" letters.
+
+| button | key          |
+|--------|:------------:|
+| 0      | <kbd>w</kbd> |
+| 1      | <kbd>a</kbd> |
+| 2      | <kbd>s</kbd> |
+| 3      | <kbd>d</kbd> |
+
+Usage (Serial)
+--------------
+To use the serial interface, open a serial terminal on your computer using a program such as [pyserial](https://github.com/pyserial/pyserial).  Use the following settings:
+
+* 115200 baud
+* 8 data bits
+* no parity
+* 1 stop bit
+
 Pressing and holding the `b0` button (and no others) will result in one line of output:
 
     1
@@ -98,7 +97,7 @@ Finally, releasing the `b3` button, then releasing the `b0` button, will produce
     8
     0
 
-notes
+Notes
 -----
 Source code built with [platformio](http://platformio.org/#!/), a cross-platform command-line based build tool and dependency manager.
 
