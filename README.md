@@ -13,15 +13,15 @@ Usage (Keyboard)
 To use a response box as a USB keyboard, plug and play.  By default, the 4 buttons correspond to 'w', 'a','s', and 'd' keycodes.  Open a text editor and use the response box to "type" letters.
 
 button | key
----|---
-0 | 'w'
-1 | 'a'
-2 | 's'
-3 | 'd'
+-------|----
+0      | 'w'
+1      | 'a'
+2      | 's'
+3      | 'd'
 
 Usage (Serial)
 --------------
-To use the serial interface, open a serial terminal using some program (e.g. [pyserial](https://github.com/pyserial/pyserial)).  Use the following settings:
+To use the serial interface, open a serial terminal on your computer using a program such as [pyserial](https://github.com/pyserial/pyserial).  Use the following settings:
 
 * 115200 baud
 * 8 data bits
@@ -42,59 +42,50 @@ Round-trip delay `d` and offset `t` are calculated as per the [SNTP protocol, se
 
     d = (T4 - T1) - (T3 - T2)     t = ((T2 - T1) + (T3 - T4)) / 2.
 
-This procedure is done at least once, usually before an experiment, but can be done at any point in time except during data collection.  The PC sends `psych-button` a signal to begin the timing measurement:
+Timing measurement from `psych-button` uses a modified version of SNTP, where `psych-button` responds to a timing request with a single number that corresponds to T3-T2.  In this scheme, T2 is always 0.  T3 is measured in integer microseconds.  Offset is not used, because `psych-button` doesn't keep a wall clock time.  The only figure we're interested in is the round-trip delay.
 
-    PC: 'T'
-    PC [waits for psych-button to respond]
-    psych-button [initiate timing algorithm by sending own timestamp]: t1
-    PC [T2 = time of t1's arrival]
-    PC [T3 = time of reply]: 'K'
-    psych-button: t4
+This procedure is done at least once, usually before an experiment, but can be done at any point in time except during data collection.
 
-where `t1` and `t4` are integer microsecond values (i.e. 1300000 == 1.3 seconds).  `T2` and `T3` depend on the PC's internal representation of system time.  For example, in Python:
+    PC (note system time T1), send character: 'T'
+    psych-button: T3
+    PC (note time of reply T4, calculate d given T3, T2=0)
+
+Python Example:
 
     import time
-    now = time.time() # floating point UNIX timestamp e.g. 1444248042.147216
-
-If using Python's `time.time()` function, convert `t1` and `t4` to seconds before doing arithmetic.
-
-The PC can now calculate `d` and `t` from `t1 T2 T3 t4` and store these values for later use.
-
-### Begin Signal
-To begin data collection, send `psych-button` a begin signal:
-
-    PC: 'B'
-    psych-button: ti
-
-where `ti` is the elapsed time since `t4`.  Note that this value will overflow after about 78 minutes, which is why running the timing measurement should be done prior!
-
-Hereafter, `psych-button` will transmit button values as it detects changes to the state of the 4 buttons.
+    T1 = time.time() # floating point UNIX timestamp e.g. 1444248042.147216
+    # todo: send query, receive response, parse T3 from response
+    T4 = time.time()
+    d = (1000000 * (T4 - T1)) - T3          # d is in units of microseconds
 
 ### Button Encoding
 Since we have 4 buttons, we can represent "pressed" with a 1 and "not pressed" with a 0, and encode all 4 button values in a single byte:
 
-button 3 | button 2 | button 1 | button 0 | byte representation | notes
----|---|---|---|---|---
-0 | 0 | 0 | 0 | 0 | no button pressed
-0 | 0 | 0 | 1 | 1 | button 0 pressed
-0 | 0 | 1 | 0 | 2 |
-0 | 0 | 1 | 1 | 3 |
-0 | 1 | 0 | 0 | 4 |
-0 | 1 | 0 | 1 | 5 | button 2 pressed
-0 | 1 | 1 | 0 | 6 |
-0 | 1 | 1 | 1 | 7 |
-1 | 0 | 0 | 0 | 8 |
-1 | 0 | 0 | 1 | 9 |
-1 | 0 | 1 | 0 | a | buttons 3 and 1 pressed
-1 | 0 | 1 | 1 | b |
-1 | 1 | 0 | 0 | c |
-1 | 1 | 0 | 1 | d |
-1 | 1 | 1 | 0 | e |
-1 | 1 | 1 | 1 | f | all buttons pressed
+| State                   | button 3 | button 2 | button 1 | button 0 | Serial representation | Keyboard representation |
+|-------------------------|----------|----------|----------|----------|:---------------------:|-------------------------|
+| no buttons pressed      | 0        | 0        | 0        | 0        |           0           |                         |
+| button 0 pressed        | 0        | 0        | 0        | 1        |           1           |      <kbd>w</kbd>       |
+|                         | 0        | 0        | 1        | 0        |           2           |      <kbd>a</kbd>       |
+|                         | 0        | 0        | 1        | 1        |           3           |                         |
+|                         | 0        | 1        | 0        | 0        |           4           |      <kbd>s</kbd>       |
+| button 2 pressed        | 0        | 1        | 0        | 1        |           5           |                         |
+|                         | 0        | 1        | 1        | 0        |           6           |                         |
+|                         | 0        | 1        | 1        | 1        |           7           |                         |
+|                         | 1        | 0        | 0        | 0        |           8           |      <kbd>d</kbd>       |
+|                         | 1        | 0        | 0        | 1        |           9           |                         |
+| buttons 3 and 1 pressed | 1        | 0        | 1        | 0        |           a           |                         |
+|                         | 1        | 0        | 1        | 1        |           b           |                         |
+|                         | 1        | 1        | 0        | 0        |           c           |                         |
+|                         | 1        | 1        | 0        | 1        |           d           |                         |
+|                         | 1        | 1        | 1        | 0        |           e           |                         |
+| all buttons pressed     | 1        | 1        | 1        | 1        |           f           |                         |
 
-The state of all 4 buttons is sent during each update as a single hexadecimal character.
+Serial interface updates whenever there is a change in the state of any button (either pressed or released).
 
-Rather than emit data continuously, it only sends data when it detects a change in the state of the buttons.  This means that pressing and holding the `b0` button (and no others) will result in one line of output:
+The Keyboard interface sends a `keydown` event followed by a `keyup` event when a button is first pressed.
+
+#### Serial Example
+Pressing and holding the `b0` button (and no others) will result in one line of output:
 
     1
 
