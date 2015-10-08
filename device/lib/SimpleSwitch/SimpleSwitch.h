@@ -32,9 +32,9 @@ class SimpleSwitch
         void update(uint32_t now = micros())
         {
             currentTime = now;
-            // Update after debounceInterval or more microseconds.
-            if (currentTime - previousTime >= debounceInterval) {
-                previousTime += debounceInterval;
+            // Update after DEBOUNCE_INTERVAL or more microseconds.
+            if (currentTime - previousTime >= DEBOUNCE_INTERVAL) {
+                previousTime += DEBOUNCE_INTERVAL;
                 currentState = digitalRead(pin);
 
                 // Okay to update the value returned by "pressed()".
@@ -50,9 +50,9 @@ class SimpleSwitch
         }
 
         // return true once, following (update() and switch-press)
-        inline bool pressed() { return getTransition(hiLoTransition); }
+        bool pressed() { return getTransition(hiLoTransition); }
         // return true once, following (update() and switch-release)
-        inline bool released() { return getTransition(loHiTransition); }
+        bool released() { return getTransition(loHiTransition); }
 
         // Return the raw button state, which is subject to bounce.
         bool getState() { return currentState; }
@@ -64,7 +64,7 @@ class SimpleSwitch
         //
         // Takes an edge (rising or falling) BY REFERENCE and resets it.
         // Edge remains false until next update().
-        inline bool getTransition(bool& edge)
+        bool getTransition(bool& edge)
         {
             bool t = edge;
             edge = false;
@@ -80,7 +80,7 @@ class SimpleSwitch
         uint8_t pin;
         uint32_t currentTime;
         uint32_t previousTime;
-        const uint32_t debounceInterval{10000}; // 10ms
+        const uint32_t DEBOUNCE_INTERVAL{10000}; // 10ms
 
 };
 

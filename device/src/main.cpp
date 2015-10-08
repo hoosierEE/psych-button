@@ -19,22 +19,25 @@
 
 // MODEL
 const uint8_t NUM_BUTTONS{4};
-uint8_t button_pins[NUM_BUTTONS]{2,3,4,5}; // Teensy digital pins
 char letters[NUM_BUTTONS]{'w','a','s','d'}; // for keyboard use
 SimpleSwitch buttons[NUM_BUTTONS]=
 {
-    SimpleSwitch(button_pins[0]),
-    SimpleSwitch(button_pins[1]),
-    SimpleSwitch(button_pins[2]),
-    SimpleSwitch(button_pins[3])
+    SimpleSwitch(2),
+    SimpleSwitch(3),
+    SimpleSwitch(4),
+    SimpleSwitch(5)
 };
 struct KeyState {
     bool keys[NUM_BUTTONS];
     bool changed;
 } ks;
 
+// TIMING
+uint16_t LOOP_TIME{10000}; // us
+elapsedMicros output_timer; // controls output data rate
+
 // FUNCTIONS
-char boolean_to_hex(struct KeyState *state)
+char bits_to_decimal(struct KeyState *state)
 {
     // Send 4 buttons as a hex digit.
     char result{0};
@@ -47,31 +50,61 @@ char boolean_to_hex(struct KeyState *state)
 void update_buttons(void)
 {
     // read 4 pins and update internal button states
-    for (uint8_t i{0}; i < NUM_BUTTONS; ++i) {
+    for (uint8_t i = 0; i < NUM_BUTTONS; ++i) {
         buttons[i].update();
     }
+}
+
+void print_letters(void)
+{
+    Serial.print(letters[0]);
+    Serial.print(letters[1]);
+    Serial.print(letters[2]);
+    Serial.println(letters[3]);
+}
+
+bool valid_letter(char candidate)
+{
+    // return true only for [A-Za-z0-9]
+    if (candidate >= '0' && candidate <= '9')
+        return true;
+    if (candidate >= 'A' && candidate <= 'Z')
+        return true;
+    if (candidate >= 'a' && candidate <= 'z')
+        return true;
+    return false;
 }
 
 void update_serial(void)
 {
     // process incoming commands from the Serial buffer, if any
+    // accepts the following 1-letter commands:
+    // T (Time)
+    // l (list letters)
+    // L (change letters)
     if (Serial.available()) {
         char command = Serial.read();
         if (command == 'T') {
             // time measurement query response
             uint32_t now{micros()};
             Serial.println(micros() - now); // respond with T3 - T2
+        } else if (command == 'l') {
+            // list letters
+            print_letters();
         } else if (command == 'L') {
             // keyboard letter replacement
             // e.g. to replace wasd with 1234, send this command over Serial:
             // L1234;
             // Power-cycling will restore default (wasd).
-            Serial.readBytesUntil(';',letters,sizeof(letters));
+
+            // TODO test this alternative to readBytesUntil()
+            char newLetters[4];
+            Serial.readBytesUntil(';',newLetters,NUM_BUTTONS+1);
+            for (uint8_t i = 0; i < NUM_BUTTONS; ++i) {
+                letters[i] = valid_letter(newLetters[i]) ? newLetters[i] : letters[i];
+            }
             Serial.print("replaced letters with ");
-            Serial.print(letters[0]);
-            Serial.print(letters[1]);
-            Serial.print(letters[2]);
-            Serial.println(letters[3]);
+            print_letters();
         }
     }
 }
@@ -79,7 +112,7 @@ void update_serial(void)
 void render_output(void)
 {
     // send output data to Keyboard or Serial or both
-    for (uint8_t i{0}; i < NUM_BUTTONS; ++i) {
+    for (uint8_t i = 0; i < NUM_BUTTONS; ++i) {
         // update internal state
         if (buttons[i].pressed()) {
             ks.changed = true;
@@ -97,17 +130,18 @@ void render_output(void)
 
         // Serial output when button state changes (press OR release)
         if (ks.changed) {
-            ks.changed = false;
+            ks.changed = false; // reset
             // send hex-encoded key state ('0' through 'f')
-            Serial.println(boolean_to_hex(&ks));
+            Serial.println(bits_to_decimal(&ks), HEX);
         }
     }
 }
 
+// PROGRAM
 void setup() {
     while (!Serial); // do-nothing-wait until Serial is ready
-    Serial.begin(115200);
-    // Keyboard.begin(); // make sure other stuff works first
+    Serial.begin(9600);
+    Keyboard.begin(); // make sure other stuff works first
 }
 
 void loop() {
@@ -120,8 +154,6 @@ void loop() {
     // RENDER
     // Send data out at a controlled rate.
     // Outputs: Serial, Keyboard
-    const uint16_t LOOP_TIME{10000}; // us
-    elapsedMicros output_timer; // controls output data rate
     if (output_timer >= LOOP_TIME) {
         output_timer -= LOOP_TIME;
         render_output();
