@@ -2,3 +2,4 @@
 .*.swp
 .pioenvs
 .sconsign.dblite
+node_modules

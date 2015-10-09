@@ -9,7 +9,7 @@ The device has a single USB cable but shows up as *two* separate USB devices: a 
 Recording data from the serial interface lets you calculate both the round-trip delay and the offset for the device+PC combo.
 
 ### Timing Measurements
-Round-trip delay `d` and offset `t` are calculated as per the [SNTP protocol, section 5](https://tools.ietf.org/html/rfc4330#section-5):
+Round-trip delay `d` is calculated as per the [SNTP protocol, section 5](https://tools.ietf.org/html/rfc4330#section-5):
 
     Timestamp Name          ID   When Generated
     ------------------------------------------------------------
@@ -30,13 +30,14 @@ This procedure is done at least once, usually before an experiment, but can be d
     psych-button: T3
     PC (note time of reply T4, calculate d given T3, T2=0)
 
-Python Example:
+### Node 0.12.7 example 
+Based on [this example](https://github.com/voodootikigod/node-serialport/blob/master/examples/readdata.js).
 
-    import time
-    T1 = time.time() # floating point UNIX timestamp e.g. 1444248042.147216
-    # todo: send query, receive response, parse T3 from response
-    T4 = time.time()
-    d = (1000000 * (T4 - T1)) - T3          # d is in units of microseconds
+Run:
+
+    $ node example.js
+
+> This example assumes you've already installed [Node.js 0.12.7](https://github.com/tj/n) and [node-serialport](https://github.com/voodootikigod/node-serialport).
 
 ### Button Encoding
 Since we have 4 buttons, we can represent "pressed" with a 1 and "not pressed" with a 0, and encode all 4 button values in a single byte:
@@ -103,5 +104,6 @@ Source code built with [platformio](http://platformio.org/#!/), a cross-platform
 
 Related Reading
 ---------------
+* [NTP overview](https://en.wikipedia.org/wiki/Network_Time_Protocol#Clock_synchronization_algorithm)
 * [Synchronization Explained](http://www.ni.com/white-paper/11369/en/)
 * [Precision Time Protocol](https://en.wikipedia.org/wiki/Precision_Time_Protocol)
