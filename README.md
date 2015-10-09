@@ -35,6 +35,9 @@ Based on [this example](https://github.com/voodootikigod/node-serialport/blob/ma
 
 Run:
 
+    $ node -v
+    v0.12.7
+    $ cd reader
     $ node example.js
 
 > This example assumes you've already installed [Node.js 0.12.7](https://github.com/tj/n) and [node-serialport](https://github.com/voodootikigod/node-serialport).
@@ -104,6 +107,7 @@ Source code built with [platformio](http://platformio.org/#!/), a cross-platform
 
 Related Reading
 ---------------
+* [example Python serial application](http://eli.thegreenplace.net/2009/08/07/a-live-data-monitor-with-python-pyqt-and-pyserial/)
 * [NTP overview](https://en.wikipedia.org/wiki/Network_Time_Protocol#Clock_synchronization_algorithm)
 * [Synchronization Explained](http://www.ni.com/white-paper/11369/en/)
 * [Precision Time Protocol](https://en.wikipedia.org/wiki/Precision_Time_Protocol)
