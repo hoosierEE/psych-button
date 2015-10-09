@@ -1,17 +1,17 @@
 // Response button firmware for TeensyLC, built with PlatformIO.
-// 
+//
 // Implements a modified version of SNTP, where:
 //
-//      network = Serial-over-USB 
+//      network = Serial-over-USB
 //      server  = host PC
 //      client  = this device
-// 
+//
 // In this modified version, the client and server roles are effectively reversed,
 // meaning: the server (instead of the client) keeps track of round-trip delay and offset.
 //
 // Modified protocol:
 //      1. Server sends "initiate timing procedure" request to client
-//      2. Client sets an internal stopwatch timer to 0 (T1), and replies with 
+//      2. Client sets an internal stopwatch timer to 0 (T1), and replies with
 //         the number of microseconds that elapsed since it received the message (T2)
 //      3. Server notes when it receives reply (T3)
 //      4. Server repeats steps 1-3 often enough to be statistically meaningful
@@ -19,7 +19,8 @@
 
 // MODEL
 const uint8_t NUM_BUTTONS{4};
-char letters[NUM_BUTTONS]{'w','a','s','d'}; // for keyboard use
+char letters[NUM_BUTTONS]{'w','a','s','d'}; // default keyboard
+// buttons connect to TeensyLC pins 2,3,4,5
 SimpleSwitch buttons[NUM_BUTTONS]=
 {
     SimpleSwitch(2),
@@ -37,22 +38,19 @@ uint16_t LOOP_TIME{10000}; // us
 elapsedMicros output_timer; // controls output data rate
 
 // FUNCTIONS
-char bits_to_decimal(struct KeyState *state)
+char bits_to_hex(struct KeyState *state)
 {
     // Send 4 buttons as a hex digit.
     char result{0};
-    for (uint8_t i = 0; i < NUM_BUTTONS; ++i) {
-        result |= state->keys[i] << i;
-    }
-    return result;
+    for (uint8_t i = 0; i < NUM_BUTTONS; ++i) { result |= state->keys[i] << i; }
+    char hex[] = "0123456789abcdef";
+    return hex[result];
 }
 
 void update_buttons(void)
 {
     // read 4 pins and update internal button states
-    for (uint8_t i = 0; i < NUM_BUTTONS; ++i) {
-        buttons[i].update();
-    }
+    for (uint8_t i = 0; i < NUM_BUTTONS; ++i) { buttons[i].update(); }
 }
 
 void print_letters(void)
@@ -66,12 +64,9 @@ void print_letters(void)
 bool valid_letter(char candidate)
 {
     // return true only for [A-Za-z0-9]
-    if (candidate >= '0' && candidate <= '9')
-        return true;
-    if (candidate >= 'A' && candidate <= 'Z')
-        return true;
-    if (candidate >= 'a' && candidate <= 'z')
-        return true;
+    if (candidate >= '0' && candidate <= '9') return true;
+    if (candidate >= 'A' && candidate <= 'Z') return true;
+    if (candidate >= 'a' && candidate <= 'z') return true;
     return false;
 }
 
@@ -89,7 +84,6 @@ void update_serial(void)
             uint32_t now{micros()};
             Serial.println(micros() - now); // respond with T3 - T2
         } else if (command == 'l') {
-            // list letters
             print_letters();
         } else if (command == 'L') {
             // keyboard letter replacement
@@ -132,7 +126,7 @@ void render_output(void)
         if (ks.changed) {
             ks.changed = false; // reset
             // send hex-encoded key state ('0' through 'f')
-            Serial.println(bits_to_decimal(&ks), HEX);
+            Serial.println(bits_to_hex(&ks));
         }
     }
 }
