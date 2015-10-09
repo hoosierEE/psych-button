@@ -21,27 +21,14 @@
 const uint8_t NUM_BUTTONS{4};
 char letters[NUM_BUTTONS]{'w','a','s','d'}; // default keyboard
 // buttons connect to TeensyLC pins 2,3,4,5
-SimpleSwitch buttons[NUM_BUTTONS]=
-{
-    SimpleSwitch(2),
-    SimpleSwitch(3),
-    SimpleSwitch(4),
-    SimpleSwitch(5)
-};
-struct KeyState {
-    bool keys[NUM_BUTTONS];
-    bool changed;
-} ks;
-
-// TIMING
-uint16_t LOOP_TIME{10000}; // us
-elapsedMicros output_timer; // controls output data rate
+SimpleSwitch buttons[NUM_BUTTONS]{SimpleSwitch(2), SimpleSwitch(3), SimpleSwitch(4), SimpleSwitch(5)};
+struct KeyState { bool keys[NUM_BUTTONS], changed; } ks;
 
 // FUNCTIONS
 char bits_to_hex(struct KeyState *state)
 {
     // Send 4 buttons as a hex digit.
-    char result{0};
+    uint8_t result{0};
     for (uint8_t i = 0; i < NUM_BUTTONS; ++i) { result |= state->keys[i] << i; }
     char hex[] = "0123456789abcdef";
     return hex[result];
@@ -131,9 +118,12 @@ void render_output(void)
     }
 }
 
+// TIMING
+const uint16_t LOOP_TIME{10000}; // us
+elapsedMicros outputTimer; // controls output data rate
+
 // PROGRAM
 void setup() {
-    while (!Serial); // do-nothing-wait until Serial is ready
     Serial.begin(9600);
     Keyboard.begin(); // make sure other stuff works first
 }
@@ -148,8 +138,8 @@ void loop() {
     // RENDER
     // Send data out at a controlled rate.
     // Outputs: Serial, Keyboard
-    if (output_timer >= LOOP_TIME) {
-        output_timer -= LOOP_TIME;
+    if (outputTimer >= LOOP_TIME) {
+        outputTimer -= LOOP_TIME;
         render_output();
     }
 }
