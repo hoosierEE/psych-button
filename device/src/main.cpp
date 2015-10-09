@@ -15,21 +15,21 @@
 //         the number of microseconds that elapsed since it received the message (T2)
 //      3. Server notes when it receives reply (T3)
 //      4. Server repeats steps 1-3 often enough to be statistically meaningful
-#include <SimpleSwitch.h>
+#include <SimpleSwitch.h> // debounces a pin; provides update(), pressed(), released() methods
 
 // MODEL
 const uint8_t NUM_BUTTONS{4};
-char letters[NUM_BUTTONS]{'w','a','s','d'}; // default keyboard
+char letters[]{"wasd"}; // default keyboard TODO make sure "string" notation works with array accesses
 // buttons connect to TeensyLC pins 2,3,4,5
-SimpleSwitch buttons[NUM_BUTTONS]{SimpleSwitch(2), SimpleSwitch(3), SimpleSwitch(4), SimpleSwitch(5)};
-struct KeyState { bool keys[NUM_BUTTONS], changed; } ks;
+SimpleSwitch buttons[NUM_BUTTONS]{SimpleSwitch(2),SimpleSwitch(3),SimpleSwitch(4),SimpleSwitch(5)};
+struct KeyState {bool keys[NUM_BUTTONS],changed;} ks;
 
 // FUNCTIONS
-char bits_to_hex(struct KeyState *state)
+char bits_to_hex(KeyState *state)
 {
-    // Send 4 buttons as a hex digit.
+    // Convert 4 bits to a single hexadecimal character.
     uint8_t result{0};
-    for (uint8_t i = 0; i < NUM_BUTTONS; ++i) { result |= state->keys[i] << i; }
+    for (uint8_t i{0}; i < NUM_BUTTONS; ++i) { result |= state->keys[i] << i; }
     char hex[] = "0123456789abcdef";
     return hex[result];
 }
@@ -37,15 +37,7 @@ char bits_to_hex(struct KeyState *state)
 void update_buttons(void)
 {
     // read 4 pins and update internal button states
-    for (uint8_t i = 0; i < NUM_BUTTONS; ++i) { buttons[i].update(); }
-}
-
-void print_letters(void)
-{
-    Serial.print(letters[0]);
-    Serial.print(letters[1]);
-    Serial.print(letters[2]);
-    Serial.println(letters[3]);
+    for (uint8_t i{0}; i < NUM_BUTTONS; ++i) { buttons[i].update(); }
 }
 
 bool valid_letter(char candidate)
@@ -57,6 +49,20 @@ bool valid_letter(char candidate)
     return false;
 }
 
+void customize_keys(void)
+{
+    // Keyboard letter customization.
+    // Power-cycling will restore default (wasd).
+    char newLetters[4];
+    Serial.readBytes(newLetters,NUM_BUTTONS+1);
+    for (uint8_t i{0}; i < NUM_BUTTONS; ++i) {
+        letters[i] = valid_letter(newLetters[i]) ? newLetters[i] : letters[i];
+    }
+    Serial.print("replaced letters with ");
+    Serial.println(letters);
+    // print_letters();
+}
+
 void update_serial(void)
 {
     // process incoming commands from the Serial buffer, if any
@@ -65,43 +71,49 @@ void update_serial(void)
     // l (list letters)
     // L (change letters)
     if (Serial.available()) {
-        char command = Serial.read();
-        if (command == 'T') {
-            // time measurement query response
-            uint32_t now{micros()};
-            Serial.println(micros() - now); // respond with T3 - T2
-        } else if (command == 'l') {
-            print_letters();
-        } else if (command == 'L') {
-            // keyboard letter replacement
-            // e.g. to replace wasd with 1234, send this command over Serial:
-            // L1234;
-            // Power-cycling will restore default (wasd).
-
-            // TODO test this alternative to readBytesUntil()
-            char newLetters[4];
-            Serial.readBytesUntil(';',newLetters,NUM_BUTTONS+1);
-            for (uint8_t i = 0; i < NUM_BUTTONS; ++i) {
-                letters[i] = valid_letter(newLetters[i]) ? newLetters[i] : letters[i];
-            }
-            Serial.print("replaced letters with ");
-            print_letters();
+        uint32_t timeSerialArrived{micros()};
+        switch (Serial.read()) {
+            case 'T':
+                // time measurement query response
+                Serial.println(micros() - timeSerialArrived); // respond with T3 - T2
+                break;
+            case 'L':
+                customize_keys();
+                break;
+            case 'l':
+                Serial.println(letters);
+                break;
+            default:
+                break;
         }
+        // TODO: test if switch statement properly replaces the section below
+        // char command{Serial.read()};
+        // if (command == 'T') {
+        //     // time measurement query response
+        //     Serial.println(micros() - timeSerialArrived); // respond with T3 - T2
+        // } else if (command == 'l') {
+        //     Serial.println(letters);
+        //     // print_letters();
+        // } else if (command == 'L') {
+        //     customize_keys();
+        // }
     }
 }
 
 void render_output(void)
 {
-    // send output data to Keyboard or Serial or both
-    for (uint8_t i = 0; i < NUM_BUTTONS; ++i) {
+    // Send data to Keyboard, Serial, or both.
+    for (uint8_t i{0}; i < NUM_BUTTONS; ++i) {
         // update internal state
         if (buttons[i].pressed()) {
             ks.changed = true;
             ks.keys[i] = true;
 
-            // send key press (and release) at time of button press
-            // Note: key release signal is automatic and not tied to
-            // the actual button release.
+            // Send keyboard letter upon corresponding button press.
+            //
+            // Note: key RELEASE signal is automatically generated
+            // shortly thereafter by the microcontroller, it DOES NOT
+            // correspond with when the human releases the button!
             Keyboard.write(letters[i]);
         }
         if (buttons[i].released()) {
