@@ -1,5 +1,4 @@
 // based on https://github.com/voodootikigod/node-serialport/blob/master/examples/readdata.js
-
 var com = require("serialport");
 
 // note, Teensys all use the same serial number, so your operating system will apply some
@@ -43,7 +42,6 @@ list = function(callback){
         });
         return;
     }
-
     child_process.exec('ls /dev/tty.*', function(err, stdout, stderr){
         if (err) return callback(err);
         if (stderr !== "") return callback(stderr);

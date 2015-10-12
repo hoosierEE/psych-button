@@ -15,16 +15,16 @@ ser = serial.Serial(likelyPort, 9600, timeout=1) #or something like this for Mac
 # Timing test
 t1 = []
 t2 = []
-amt = 10
+amt = 100 
 for x in range(0,amt):
     t1.append(time.clock())
     ser.write('T')
     line = ser.readline()   # read a '\n' terminated line
     t2.append(time.clock())
 
-print amt, " times t1: " t1
-print amt, " times t2: " t2
-print (sum(t2) - sum(t1))
+print "t1 times: ", t1
+print "t2 times: ", t2
+print "average time: ", (sum(t2) - sum(t1)), " seconds"
 
 ser.close()
 
