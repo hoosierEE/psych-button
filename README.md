@@ -30,17 +30,14 @@ This procedure is done at least once, usually before an experiment, but can be d
     psych-button: T3
     PC (note time of reply T4, calculate d given T3, T2=0)
 
-### Node 0.12.7 example 
-Based on [this example](https://github.com/voodootikigod/node-serialport/blob/master/examples/readdata.js).
+### Python pyserial example
 
-Run:
+    cd examples/
+    python pythonExample.py
 
-    $ node -v
-    v0.12.7
-    $ cd reader
-    $ node example.js
+The results from this test is a list of 100 numbers, corresponding to timing measurements before (t1) sending a `T` and after (t2).  The plot below shows the results of one such test, highlighting the standard deviation (blue), variance (red), arithmetic mean (green) and differences (t2<sub>i</sub> - t1<sub>i</sub>, violet):
 
-> This example assumes you've already installed [Node.js 0.12.7](https://github.com/tj/n) and [node-serialport](https://github.com/voodootikigod/node-serialport).
+![](https://raw.githubusercontent.com/hoosierEE/psych-button/master/examples/round_trip_timing.png)
 
 ### Button Encoding
 Since we have 4 buttons, we can represent "pressed" with a 1 and "not pressed" with a 0, and encode all 4 button values in a single byte:
