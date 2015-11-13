@@ -8,6 +8,7 @@
 //      4. Server repeats steps 1-3 often enough to be statistically meaningful
 
 #include <SimpleSwitch.h> // debounces a pin; provides update(), pressed(), released() methods
+#define DO(n) for(int i=0,_n=(n); i<_n;++i)
 
 // MODEL
 const uint8_t NUM_BUTTONS{4};
@@ -16,12 +17,14 @@ char letters[]{"wasd"}; // default keyboard TODO make sure "string" notation wor
 SimpleSwitch buttons[NUM_BUTTONS]{SimpleSwitch(2),SimpleSwitch(3),SimpleSwitch(4),SimpleSwitch(5)};
 struct KeyState {bool keys[NUM_BUTTONS],changed;} ks;
 
+
 // FUNCTIONS
 char bits_to_hex(KeyState *state)
 {
     // Convert 4 bits to a single hexadecimal character.
     uint8_t result{0};
-    for (uint8_t i{0}; i < NUM_BUTTONS; ++i) { result |= state->keys[i] << i; }
+    // for (uint8_t i{0}; i < NUM_BUTTONS; ++i) { result |= state->keys[i] << i; }
+    DO(NUM_BUTTONS) { result |= state->keys[i] << i; }
     char hex[]{"0123456789abcdef"};
     return hex[result];
 }
@@ -29,15 +32,16 @@ char bits_to_hex(KeyState *state)
 void update_buttons(void)
 {
     // read 4 pins and update internal button states
-    for (uint8_t i{0}; i < NUM_BUTTONS; ++i) { buttons[i].update(); }
+    // for (uint8_t i{0}; i < NUM_BUTTONS; ++i) { buttons[i].update(); }
+    DO(NUM_BUTTONS) { buttons[i].update(); }
 }
 
-bool valid_letter(char candidate)
+bool valid_letter(char c)
 {
     // return true only for [A-Za-z0-9]
-    if (candidate >= '0' && candidate <= '9') return true;
-    if (candidate >= 'A' && candidate <= 'Z') return true;
-    if (candidate >= 'a' && candidate <= 'z') return true;
+    if (c >= '0' && c <= '9') return true;
+    if (c >= 'A' && c <= 'Z') return true;
+    if (c >= 'a' && c <= 'z') return true;
     return false;
 }
 
@@ -47,7 +51,8 @@ void customize_keys(void)
     // Power-cycling will restore default (wasd).
     char newLetters[4];
     Serial.readBytes(newLetters,NUM_BUTTONS+1);
-    for (uint8_t i{0}; i < NUM_BUTTONS; ++i) {
+    // for (uint8_t i{0}; i < NUM_BUTTONS; ++i) {
+    DO(NUM_BUTTONS) {
         letters[i] = valid_letter(newLetters[i]) ? newLetters[i] : letters[i];
     }
     Serial.print("replaced letters with ");
@@ -83,8 +88,9 @@ void update_serial(void)
 void render_output(void)
 {
     // Send data to Keyboard, Serial, or both.
-    for (uint8_t i{0}; i < NUM_BUTTONS; ++i) {
-        // update internal state
+    //for (uint8_t i{0}; i < NUM_BUTTONS; ++i) {
+	DO(NUM_BUTTONS) {
+		// update internal state
         if (buttons[i].pressed()) {
             ks.changed = true;
             ks.keys[i] = true;
