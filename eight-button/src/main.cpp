@@ -8,9 +8,9 @@
 //      4. Server repeats steps 1-3 often enough to be statistically meaningful
 
 #include <SimpleSwitch.h> // debounces a pin; provides update(), pressed(), released() methods
+#define DO(n) for(int i=0,_n=(n); i<_n;++i)
 
 // MODEL
-NUM_SOMETHING
 const uint8_t NUM_BUTTONS{8};
 char letters[]{"abcdefgh"}; // default keyboard letters
 // buttons connect to TeensyLC pins 2,3,4,5 (top row) and 6,7,8,9 (bottom row)
@@ -30,14 +30,16 @@ struct KeyState {bool keys[NUM_BUTTONS],changed;} ks;
 int bits_to_int(KeyState *state)
 {
 	int result{0};
-	for (uint8_t i{0}; i < NUM_BUTTONS; ++i) { result |= state->keys[i] << i; }
+	DO(NUM_BUTTONS) {result |= state->keys[i] << i;}
+	//for (uint8_t i{0}; i < NUM_BUTTONS; ++i) { result |= state->keys[i] << i; }
 	return result;
 }
 
 void update_buttons(void)
 {
 	// read 4 pins and update internal button states
-	for (uint8_t i{0}; i < NUM_BUTTONS; ++i) { buttons[i].update(); }
+	DO(NUM_BUTTONS) {buttons[i].update();}
+	//for (uint8_t i{0}; i < NUM_BUTTONS; ++i) {buttons[i].update();}
 }
 
 void print_letters(void)
@@ -45,12 +47,12 @@ void print_letters(void)
 	Serial.println(letters);
 }
 
-bool valid_letter(char candidate)
+bool valid_letter(char c)
 {
 	// return true only for [A-Za-z0-9]
-	if (candidate >= '0' && candidate <= '9') return true;
-	if (candidate >= 'A' && candidate <= 'Z') return true;
-	if (candidate >= 'a' && candidate <= 'z') return true;
+	if (c >= '0' && c <= '9') return true;
+	if (c >= 'A' && c <= 'Z') return true;
+	if (c >= 'a' && c <= 'z') return true;
 	return false;
 }
 
@@ -60,10 +62,11 @@ void customize_keys(void)
 	// power-cycling restores defaults
 	char newLetters[NUM_BUTTONS];
 	Serial.readBytes(newLetters,NUM_BUTTONS+1);
-	for (uint8_t i{0}; i < NUM_BUTTONS; ++i) {
+	DO (NUM_BUTTONS) {
+		//for (uint8_t i{0}; i < NUM_BUTTONS; ++i) {
 		letters[i] = valid_letter(newLetters[i]) ? newLetters[i] : letters[i];
 	}
-	Serial.print("replaced letters with ");
+	Serial.print(F("replaced letters with "));
 	print_letters();
 }
 
@@ -78,13 +81,13 @@ void update_serial(void)
 		uint32_t timeSerialArrived{micros()};
 		switch (Serial.read()) {
 		case 'h':
-			Serial.println("Options");
-			Serial.println(" h - print this help message");
-			Serial.println(" T - print elapsed time");
-			Serial.print(" L - customize letters: send up to ");
+			Serial.println(F("Options"));
+			Serial.println(F(" h - print this help message"));
+			Serial.println(F(" T - print elapsed time"));
+			Serial.print(F(" L - customize letters: send up to "));
 			Serial.print(NUM_BUTTONS);
-			Serial.print(" letters, in order to overwrite the existing ones");
-			Serial.println(" l - print the current letter set");
+			Serial.print(F(" letters, in order to overwrite the existing ones"));
+			Serial.println(F(" l - print the current letter set"));
 		case 'T':
 			// time measurement query response
 			Serial.println(micros() - timeSerialArrived); // respond with T3 - T2
@@ -104,7 +107,8 @@ void update_serial(void)
 void render_output(void)
 {
 	// Send data to Keyboard, Serial, or both.
-	for (uint8_t i{0}; i < NUM_BUTTONS; ++i) {
+	DO(NUM_BUTTONS) {
+		//for (uint8_t i{0}; i < NUM_BUTTONS; ++i) {
 		// update internal state
 		if (buttons[i].pressed()) {
 			ks.changed = true;
@@ -128,10 +132,6 @@ void render_output(void)
 	}
 }
 
-// TIMING
-const uint16_t LOOP_TIME{10000}; // value in microseconds
-elapsedMicros outputTimer; // determines output data rate
-
 // PROGRAM
 void setup() {
 	// Only transmits at 9600 baud if RS232 hardware present.
@@ -147,6 +147,10 @@ void loop() {
 	update_buttons();
 	update_serial();
 
+	// TIMING
+	const uint16_t LOOP_TIME{10000}; // value in microseconds
+	elapsedMicros outputTimer; // determines output data rate
+
 	// RENDER
 	// Send data out at a controlled rate.
 	// Outputs: Serial, Keyboard
@@ -155,4 +159,3 @@ void loop() {
 		render_output();
 	}
 }
-
