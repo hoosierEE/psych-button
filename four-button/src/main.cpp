@@ -9,22 +9,21 @@
 //      4. Server repeats steps 1-3 often enough to be statistically meaningful
 
 #include <SimpleSwitch.h> // debounces a pin; provides update(), pressed(), released() methods
+// "Do" the loop body `n` times, with capture of loop index `i` as local variable.
 #define DO(n) for(int i=0,_n=(n); i<_n;++i)
 
 // MODEL
 const uint8_t NUM_BUTTONS{4};
-char letters[]{"wasd"}; // default keyboard TODO make sure "string" notation works with array accesses
+char letters[]{"wxyz"}; // default keyboard TODO make sure "string" notation works with array accesses
 // buttons connect to TeensyLC pins 2,3,4,5
 SimpleSwitch buttons[NUM_BUTTONS]{SimpleSwitch(2),SimpleSwitch(3),SimpleSwitch(4),SimpleSwitch(5)};
 struct KeyState {bool keys[NUM_BUTTONS],changed;} ks;
-
 
 // FUNCTIONS
 char bits_to_hex(KeyState *state)
 {
 	// Convert 4 bits to a single hexadecimal character.
 	uint8_t result{0};
-	// for (uint8_t i{0}; i < NUM_BUTTONS; ++i) { result |= state->keys[i] << i; }
 	DO(NUM_BUTTONS) { result |= state->keys[i] << i; }
 	char hex[]{"0123456789abcdef"};
 	return hex[result];
@@ -33,7 +32,6 @@ char bits_to_hex(KeyState *state)
 void update_buttons(void)
 {
 	// read 4 pins and update internal button states
-	// for (uint8_t i{0}; i < NUM_BUTTONS; ++i) { buttons[i].update(); }
 	DO(NUM_BUTTONS) { buttons[i].update(); }
 }
 
@@ -49,10 +47,9 @@ bool valid_letter(char c)
 void customize_keys(void)
 {
 	// Keyboard letter customization.
-	// Power-cycling will restore default (wasd).
+	// Power-cycling restores default (wxyz).
 	char newLetters[4];
 	Serial.readBytes(newLetters,NUM_BUTTONS+1);
-	// for (uint8_t i{0}; i < NUM_BUTTONS; ++i) {
 	DO(NUM_BUTTONS) {
 		letters[i] = valid_letter(newLetters[i]) ? newLetters[i] : letters[i];
 	}
@@ -86,31 +83,30 @@ void update_serial(void)
 	}
 }
 
-void render_output(void)
+void render_output(KeyState *keystate)
 {
 	// Send data to Keyboard, Serial, or both.
-	//for (uint8_t i{0}; i < NUM_BUTTONS; ++i) {
 	DO(NUM_BUTTONS) {
 		// update internal state
 		if (buttons[i].pressed()) {
-			ks.changed = true;
-			ks.keys[i] = true;
+			keystate->changed = true;
+			keystate->keys[i] = true;
 			// Send keyboard letter with corresponding button press.
 			Keyboard.press(letters[i]);
 		}
 		if (buttons[i].released()) {
-			ks.changed = true;
-			ks.keys[i] = false;
+			keystate->changed = true;
+			keystate->keys[i] = false;
 			// Release keyboard letter with corresponding button release.
 			Keyboard.release(letters[i]);
 		}
 
 		// Serial output when button state changes (press OR release)
-		if (ks.changed) {
-			ks.changed = false; // reset
+		if (keystate->changed) {
+			keystate->changed = false; // reset
 			// send hex-encoded key state ('0' through 'f')
-			//Serial.println(bits_to_hex(&ks)); // 1:4 compression... worth it?
-			DO(NUM_BUTTONS){Serial.print(ks.keys[i]);Serial.print(" ");}
+			//Serial.println(bits_to_hex(&keystate)); // 1:4 compression... worth it?
+			DO(NUM_BUTTONS) { Serial.print(keystate->keys[i]);Serial.print(" "); }
 			Serial.println("");
 		}
 	}
@@ -138,6 +134,6 @@ void loop() {
 	// Outputs: Serial, Keyboard
 	if (outputTimer >= LOOP_TIME) {
 		outputTimer -= LOOP_TIME;
-		render_output();
+		render_output(&ks);
 	}
 }
