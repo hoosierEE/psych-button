@@ -118,16 +118,15 @@ void setup() {
 	Keyboard.begin();
 }
 
+// TIMING
+const uint16_t LOOP_TIME{10000}; // value in microseconds
+elapsedMicros outputTimer; // determines output data rate
 void loop() {
 	// UPDATE
 	// Gather input data as fast as possible.
 	// Inputs: buttons, Serial
 	update_buttons();
 	update_serial();
-
-    // TIMING
-	const uint16_t LOOP_TIME{10000}; // value in microseconds
-	elapsedMicros outputTimer; // determines output data rate
 
 	// RENDER
 	// Send data out at a controlled rate.
