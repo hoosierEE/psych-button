@@ -1,11 +1,4 @@
 // Response button firmware for TeensyLC, built with PlatformIO.
-//
-// Modified SNTP timing protocol:
-//      1. Server sends "initiate timing procedure" request to client
-//      2. Client sets an internal stopwatch timer to 0 (T1), and replies with
-//         the number of microseconds that elapsed since it received the message (T2)
-//      3. Server notes when it receives reply (T3)
-//      4. Server repeats steps 1-3 often enough to be statistically meaningful
 
 #include <SimpleSwitch.h> // debounces a pin; provides update(), pressed(), released() methods
 #define DO(n) for(int i=0,_n=(n); i<_n;++i)
@@ -13,6 +6,7 @@
 // MODEL
 const uint8_t NUM_BUTTONS{8};
 char letters[]{"abcdefgh"}; // default keyboard letters
+char home[]{"_-"}; // characters for home button down (_) and up (-)
 // buttons connect to TeensyLC pins 2,3,4,5 (top row) and 6,7,8,9 (bottom row)
 SimpleSwitch buttons[NUM_BUTTONS]
 { SimpleSwitch(2)
@@ -92,14 +86,9 @@ void update_serial(void)
 			// time measurement query response
 			Serial.println(micros() - timeSerialArrived); // respond with T3 - T2
 			break;
-		case 'L':
-			customize_keys();
-			break;
-		case 'l':
-			print_letters();
-			break;
-		default:
-			break;
+		case 'L': customize_keys(); break;
+		case 'l': print_letters(); break;
+		default: break;
 		}
 	}
 }
