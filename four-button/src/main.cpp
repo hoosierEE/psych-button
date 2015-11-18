@@ -12,28 +12,20 @@
 // "Do" the loop body `n` times, with capture of loop index `i` as local variable.
 #define DO(n) for(int i=0,_n=(n); i<_n;++i)
 
+// TIMING
+const uint16_t LOOP_TIME{10000}; // value in microseconds
+elapsedMicros outputTimer; // determines output data rate
+
 // MODEL
 const uint8_t NUM_BUTTONS{4};
-char letters[]{"wxyz"}; // default keyboard TODO make sure "string" notation works with array accesses
+char l[]{"wxyz"}; // default keyboard TODO make sure "string" notation works with array accesses
 // buttons connect to TeensyLC pins 2,3,4,5
 SimpleSwitch buttons[NUM_BUTTONS]{SimpleSwitch(2),SimpleSwitch(3),SimpleSwitch(4),SimpleSwitch(5)};
 struct KeyState {bool keys[NUM_BUTTONS],changed;} ks;
 
 // FUNCTIONS
-char bits_to_hex(KeyState *state)
-{
-	// Convert 4 bits to a single hexadecimal character.
-	uint8_t result{0};
-	DO(NUM_BUTTONS) { result |= state->keys[i] << i; }
-	char hex[]{"0123456789abcdef"};
-	return hex[result];
-}
-
-void update_buttons(void)
-{
-	// read 4 pins and update internal button states
-	DO(NUM_BUTTONS) { buttons[i].update(); }
-}
+// read 4 pins and update internal button states
+void update_buttons(void){DO(NUM_BUTTONS){buttons[i].update();}}
 
 bool valid_letter(char c)
 {
@@ -48,13 +40,11 @@ void customize_keys(void)
 {
 	// Keyboard letter customization.
 	// Power-cycling restores default (wxyz).
-	char newLetters[4];
-	Serial.readBytes(newLetters,NUM_BUTTONS+1);
-	DO(NUM_BUTTONS) {
-		letters[i] = valid_letter(newLetters[i]) ? newLetters[i] : letters[i];
-	}
+	char nl[4]; // new letters
+	Serial.readBytes(nl,NUM_BUTTONS+1);
+	DO(NUM_BUTTONS){l[i] = valid_letter(nl[i]) ? nl[i] : l[i];}
 	Serial.print("replaced letters with ");
-	Serial.println(letters);
+	Serial.println(l);
 }
 
 void update_serial(void)
@@ -65,49 +55,41 @@ void update_serial(void)
 	// l (list letters)
 	// L (change letters)
 	if (Serial.available()) {
-		uint32_t timeSerialArrived{micros()};
+		uint32_t t{micros()};
 		switch (Serial.read()) {
-		case 'T':
-			// time measurement query response
-			Serial.println(micros() - timeSerialArrived); // respond with T3 - T2
-			break;
-		case 'L':
-			customize_keys();
-			break;
-		case 'l':
-			Serial.println(letters);
-			break;
-		default:
-			break;
+		case 'T': Serial.println(micros() - t); break; // respond with T3 - T2
+		case 'L': customize_keys(); break;
+		case 'l': Serial.println(l); break;
+		default: break;
 		}
 	}
 }
 
-void render_output(KeyState *keystate)
+void render_output(KeyState *k)
 {
 	// Send data to Keyboard, Serial, or both.
 	DO(NUM_BUTTONS) {
-		// update internal state
+		// update internal k
 		if (buttons[i].pressed()) {
-			keystate->changed = true;
-			keystate->keys[i] = true;
+			k->changed = true;
+			k->keys[i] = true;
 			// Send keyboard letter with corresponding button press.
-			Keyboard.press(letters[i]);
+			Keyboard.press(l[i]);
 		}
 		if (buttons[i].released()) {
-			keystate->changed = true;
-			keystate->keys[i] = false;
+			k->changed = true;
+			k->keys[i] = false;
 			// Release keyboard letter with corresponding button release.
-			Keyboard.release(letters[i]);
+			Keyboard.release(l[i]);
 		}
 
-		// Serial output when button state changes (press OR release)
-		if (keystate->changed) {
-			keystate->changed = false; // reset
-			// send hex-encoded key state ('0' through 'f')
-			//Serial.println(bits_to_hex(&keystate)); // 1:4 compression... worth it?
-			DO(NUM_BUTTONS) { Serial.print(keystate->keys[i]);Serial.print(" "); }
-			Serial.println("");
+		// Serial output when button k changes (press OR release)
+		if (k->changed) {
+			k->changed = false; // reset
+			const uint8_t BLEN{9};
+			char buf[BLEN]={0}; // holds an array of null terminators
+			snprintf(buf,BLEN,"%d %d %d %d\n",k->keys[0],k->keys[1],k->keys[2],k->keys[3]);
+			Serial.print(buf);
 		}
 	}
 }
@@ -118,9 +100,6 @@ void setup() {
 	Keyboard.begin();
 }
 
-// TIMING
-const uint16_t LOOP_TIME{10000}; // value in microseconds
-elapsedMicros outputTimer; // determines output data rate
 void loop() {
 	// UPDATE
 	// Gather input data as fast as possible.
