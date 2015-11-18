@@ -19,22 +19,14 @@ elapsedMicros outputTimer; // determines output data rate
 // MODEL
 const uint8_t NUM_BUTTONS{4};
 char l[]{"wxyz"}; // default keyboard TODO make sure "string" notation works with array accesses
+char h[]{"_-"}; // home button down(_) or up(-)
 // buttons connect to TeensyLC pins 2,3,4,5
 SimpleSwitch buttons[NUM_BUTTONS]{SimpleSwitch(2),SimpleSwitch(3),SimpleSwitch(4),SimpleSwitch(5)};
 struct KeyState {bool keys[NUM_BUTTONS],changed;} ks;
 
 // FUNCTIONS
-// read 4 pins and update internal button states
-void update_buttons(void){DO(NUM_BUTTONS){buttons[i].update();}}
-
-bool valid_letter(char c)
-{
-	// return true only for [A-Za-z0-9]
-	if (c >= '0' && c <= '9') return true;
-	if (c >= 'A' && c <= 'Z') return true;
-	if (c >= 'a' && c <= 'z') return true;
-	return false;
-}
+void update_buttons(void){DO(NUM_BUTTONS){buttons[i].update();}} // update buttons with pin readings
+bool valid_letter(char c) {return ((c>='0'&&c<='9')||(c>='A'&&c<='Z')||(c>='a'&&c<='z'));} // [09AZaz]=true else false
 
 void customize_keys(void)
 {
@@ -55,9 +47,9 @@ void update_serial(void)
 	// l (list letters)
 	// L (change letters)
 	if (Serial.available()) {
-		uint32_t t{micros()};
+		uint32_t t2{micros()};
 		switch (Serial.read()) {
-		case 'T': Serial.println(micros() - t); break; // respond with T3 - T2
+		case 'T': Serial.println(micros() - t2); break; // respond with T3 - T2
 		case 'L': customize_keys(); break;
 		case 'l': Serial.println(l); break;
 		default: break;
@@ -69,7 +61,7 @@ void render_output(KeyState *k)
 {
 	// Send data to Keyboard, Serial, or both.
 	DO(NUM_BUTTONS) {
-		// update internal k
+		// update internal key state
 		if (buttons[i].pressed()) {
 			k->changed = true;
 			k->keys[i] = true;
