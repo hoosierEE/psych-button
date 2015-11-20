@@ -3,3 +3,5 @@
 .pioenvs
 .sconsign.dblite
 node_modules
+AutoSave_*
+*~.*

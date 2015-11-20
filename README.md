@@ -42,24 +42,24 @@ The results from this test is a list of 100 numbers, corresponding to timing mea
 ### Button Encoding
 Since we have 4 buttons, we can represent "pressed" with a 1 and "not pressed" with a 0, and encode all 4 button values in a single byte:
 
-| State                   | button 3 | button 2 | button 1 | button 0 | Serial representation | Keyboard representation |
-|-------------------------|----------|----------|----------|----------|:---------------------:|:-----------------------:|
-| no buttons pressed      | 0        | 0        | 0        | 0        |           0           |                         |
-| button 0 pressed        | 0        | 0        | 0        | 1        |           1           |      <kbd>w</kbd>       |
-| button 1 pressed        | 0        | 0        | 1        | 0        |           2           |      <kbd>a</kbd>       |
-| buttons 0 1 pressed     | 0        | 0        | 1        | 1        |           3           |                         |
-| button 2 pressed        | 0        | 1        | 0        | 0        |           4           |      <kbd>s</kbd>       |
-| buttons 0 2 pressed     | 0        | 1        | 0        | 1        |           5           |                         |
-| buttons 1 2 pressed     | 0        | 1        | 1        | 0        |           6           |                         |
-| buttons 0 1 2 pressed   | 0        | 1        | 1        | 1        |           7           |                         |
-| button 3 pressed        | 1        | 0        | 0        | 0        |           8           |      <kbd>d</kbd>       |
-| buttons 0 3 pressed     | 1        | 0        | 0        | 1        |           9           |                         |
-| (etc.)                  | 1        | 0        | 1        | 0        |           a           |                         |
-| (etc.)                  | 1        | 0        | 1        | 1        |           b           |                         |
-| (etc.)                  | 1        | 1        | 0        | 0        |           c           |                         |
-| (etc.)                  | 1        | 1        | 0        | 1        |           d           |                         |
-| (etc.)                  | 1        | 1        | 1        | 0        |           e           |                         |
-| all buttons pressed     | 1        | 1        | 1        | 1        |           f           |                         |
+| State                   | button 3 | button 2 | button 1 | button 0 | Keyboard representation |
+|-------------------------|----------|----------|----------|----------|:-----------------------:|
+| no buttons pressed      | 0        | 0        | 0        | 0        |                         |
+| button 0 pressed        | 0        | 0        | 0        | 1        |      <kbd>w</kbd>       |
+| button 1 pressed        | 0        | 0        | 1        | 0        |      <kbd>x</kbd>       |
+| buttons 0 1 pressed     | 0        | 0        | 1        | 1        |                         |
+| button 2 pressed        | 0        | 1        | 0        | 0        |      <kbd>y</kbd>       |
+| buttons 0 2 pressed     | 0        | 1        | 0        | 1        |                         |
+| buttons 1 2 pressed     | 0        | 1        | 1        | 0        |                         |
+| buttons 0 1 2 pressed   | 0        | 1        | 1        | 1        |                         |
+| button 3 pressed        | 1        | 0        | 0        | 0        |      <kbd>z</kbd>       |
+| buttons 0 3 pressed     | 1        | 0        | 0        | 1        |                         |
+| (etc.)                  | 1        | 0        | 1        | 0        |                         |
+| (etc.)                  | 1        | 0        | 1        | 1        |                         |
+| (etc.)                  | 1        | 1        | 0        | 0        |                         |
+| (etc.)                  | 1        | 1        | 0        | 1        |                         |
+| (etc.)                  | 1        | 1        | 1        | 0        |                         |
+| all buttons pressed     | 1        | 1        | 1        | 1        |                         |
 
 Serial interface updates whenever there is a change in the state of any button (either pressed or released).
 
@@ -72,9 +72,9 @@ To use a response box as a USB keyboard, plug and play.  By default, the 4 butto
 | button | key          |
 |--------|:------------:|
 | 0      | <kbd>w</kbd> |
-| 1      | <kbd>a</kbd> |
-| 2      | <kbd>s</kbd> |
-| 3      | <kbd>d</kbd> |
+| 1      | <kbd>x</kbd> |
+| 2      | <kbd>y</kbd> |
+| 3      | <kbd>z</kbd> |
 
 Usage (Serial)
 --------------
@@ -87,16 +87,16 @@ To use the serial interface, open a serial terminal on your computer using a pro
 
 Pressing and holding the `b0` button (and no others) will result in one line of output:
 
-    1
+    1 0 0 0
 
 Meanwhile, if you press the `b3` button, while continuing to hold `b0`, the next output will be:
 
-    9
+    1 0 0 1
 
 Finally, releasing the `b3` button, then releasing the `b0` button, will produce this output:
 
-    8
-    0
+    0 0 0 1
+    0 0 0 0
 
 Notes
 -----

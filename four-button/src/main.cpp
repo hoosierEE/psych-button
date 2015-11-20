@@ -12,102 +12,80 @@
 // "Do" the loop body `n` times, with capture of loop index `i` as local variable.
 #define DO(n) for(int i=0,_n=(n); i<_n;++i)
 
+// TIMING
+const uint16_t LOOP_TIME{10000}; // value in microseconds
+elapsedMicros outputTimer; // determines output data rate
+
 // MODEL
 const uint8_t NUM_BUTTONS{4};
-char letters[]{"wxyz"}; // default keyboard TODO make sure "string" notation works with array accesses
+char l[]{"wxyz"}; // default keyboard TODO make sure "string" notation works with array accesses
+char h[]{"_-"}; // home button down(_) or up(-)
 // buttons connect to TeensyLC pins 2,3,4,5
 SimpleSwitch buttons[NUM_BUTTONS]{SimpleSwitch(2),SimpleSwitch(3),SimpleSwitch(4),SimpleSwitch(5)};
 struct KeyState {bool keys[NUM_BUTTONS],changed;} ks;
 
 // FUNCTIONS
-char bits_to_hex(KeyState *state)
-{
-	// Convert 4 bits to a single hexadecimal character.
-	uint8_t result{0};
-	DO(NUM_BUTTONS) { result |= state->keys[i] << i; }
-	char hex[]{"0123456789abcdef"};
-	return hex[result];
-}
+bool valid_letter(char c){return ((c>='0'&&c<='9')||(c>='A'&&c<='Z')||(c>='a'&&c<='z'));} // true for [09AZaz]
 
-void update_buttons(void)
-{
-	// read 4 pins and update internal button states
-	DO(NUM_BUTTONS) { buttons[i].update(); }
-}
+// I/O
+void update_buttons(void){DO(NUM_BUTTONS){buttons[i].update();}} // update buttons with pin readings
 
-bool valid_letter(char c)
-{
-	// return true only for [A-Za-z0-9]
-	if (c >= '0' && c <= '9') return true;
-	if (c >= 'A' && c <= 'Z') return true;
-	if (c >= 'a' && c <= 'z') return true;
-	return false;
-}
+void update_touch(void){}
 
 void customize_keys(void)
 {
 	// Keyboard letter customization.
 	// Power-cycling restores default (wxyz).
-	char newLetters[4];
-	Serial.readBytes(newLetters,NUM_BUTTONS+1);
-	DO(NUM_BUTTONS) {
-		letters[i] = valid_letter(newLetters[i]) ? newLetters[i] : letters[i];
-	}
+	char nl[4]; // new letters
+	Serial.readBytes(nl,NUM_BUTTONS+1);
+	DO(NUM_BUTTONS){l[i] = valid_letter(nl[i]) ? nl[i] : l[i];}
 	Serial.print("replaced letters with ");
-	Serial.println(letters);
+	Serial.println(l);
 }
 
-void update_serial(void)
+void read_serial(void)
 {
 	// process incoming commands from the Serial buffer, if any
 	// accepts the following 1-letter commands:
 	// T (Time)
 	// l (list letters)
 	// L (change letters)
+    uint32_t t2{micros()};
 	if (Serial.available()) {
-		uint32_t timeSerialArrived{micros()};
 		switch (Serial.read()) {
-		case 'T':
-			// time measurement query response
-			Serial.println(micros() - timeSerialArrived); // respond with T3 - T2
-			break;
-		case 'L':
-			customize_keys();
-			break;
-		case 'l':
-			Serial.println(letters);
-			break;
-		default:
-			break;
+		case 'T': Serial.println(micros() - t2); break; // respond with T3 - T2
+		case 'L': customize_keys(); break;
+		case 'l': Serial.println(l); break;
+		default: break;
 		}
 	}
 }
 
-void render_output(KeyState *keystate)
+void render_output(KeyState *k)
 {
 	// Send data to Keyboard, Serial, or both.
 	DO(NUM_BUTTONS) {
-		// update internal state
+		// update internal key state
 		if (buttons[i].pressed()) {
-			keystate->changed = true;
-			keystate->keys[i] = true;
+			k->changed = true;
+			k->keys[i] = true;
 			// Send keyboard letter with corresponding button press.
-			Keyboard.press(letters[i]);
+			Keyboard.press(l[i]);
 		}
 		if (buttons[i].released()) {
-			keystate->changed = true;
-			keystate->keys[i] = false;
+			k->changed = true;
+			k->keys[i] = false;
 			// Release keyboard letter with corresponding button release.
-			Keyboard.release(letters[i]);
+			Keyboard.release(l[i]);
 		}
 
-		// Serial output when button state changes (press OR release)
-		if (keystate->changed) {
-			keystate->changed = false; // reset
-			// send hex-encoded key state ('0' through 'f')
-			//Serial.println(bits_to_hex(&keystate)); // 1:4 compression... worth it?
-			DO(NUM_BUTTONS) { Serial.print(keystate->keys[i]);Serial.print(" "); }
-			Serial.println("");
+		// Serial output when button k changes (press OR release)
+		if (k->changed) {
+			k->changed = false; // reset
+			const uint8_t BLEN{9};
+			char buf[BLEN]={0}; // holds an array of null terminators
+			snprintf(buf,BLEN,"%d %d %d %d\n",k->keys[0],k->keys[1],k->keys[2],k->keys[3]);
+			Serial.print(buf);
 		}
 	}
 }
@@ -123,11 +101,7 @@ void loop() {
 	// Gather input data as fast as possible.
 	// Inputs: buttons, Serial
 	update_buttons();
-	update_serial();
-
-    // TIMING
-	const uint16_t LOOP_TIME{10000}; // value in microseconds
-	elapsedMicros outputTimer; // determines output data rate
+	read_serial();
 
 	// RENDER
 	// Send data out at a controlled rate.
