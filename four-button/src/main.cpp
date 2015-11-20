@@ -47,7 +47,6 @@ void update_serial(void)
 	// l (list letters)
 	// L (change letters)
 	if (Serial.available()) {
-		uint32_t t2{micros()};
 		switch (Serial.read()) {
 		case 'T': Serial.println(micros() - t2); break; // respond with T3 - T2
 		case 'L': customize_keys(); break;
