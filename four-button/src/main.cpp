@@ -25,8 +25,12 @@ SimpleSwitch buttons[NUM_BUTTONS]{SimpleSwitch(2),SimpleSwitch(3),SimpleSwitch(4
 struct KeyState {bool keys[NUM_BUTTONS],changed;} ks;
 
 // FUNCTIONS
+bool valid_letter(char c){return ((c>='0'&&c<='9')||(c>='A'&&c<='Z')||(c>='a'&&c<='z'));} // true for [09AZaz]
+
+// I/O
 void update_buttons(void){DO(NUM_BUTTONS){buttons[i].update();}} // update buttons with pin readings
-bool valid_letter(char c) {return ((c>='0'&&c<='9')||(c>='A'&&c<='Z')||(c>='a'&&c<='z'));} // [09AZaz]=true else false
+
+void update_touch(void){}
 
 void customize_keys(void)
 {
@@ -39,13 +43,14 @@ void customize_keys(void)
 	Serial.println(l);
 }
 
-void update_serial(void)
+void read_serial(void)
 {
 	// process incoming commands from the Serial buffer, if any
 	// accepts the following 1-letter commands:
 	// T (Time)
 	// l (list letters)
 	// L (change letters)
+    uint32_t t2{micros()};
 	if (Serial.available()) {
 		switch (Serial.read()) {
 		case 'T': Serial.println(micros() - t2); break; // respond with T3 - T2
@@ -96,7 +101,7 @@ void loop() {
 	// Gather input data as fast as possible.
 	// Inputs: buttons, Serial
 	update_buttons();
-	update_serial();
+	read_serial();
 
 	// RENDER
 	// Send data out at a controlled rate.

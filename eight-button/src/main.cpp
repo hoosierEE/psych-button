@@ -18,31 +18,12 @@ int bits_to_int(KeyState *state)
 {
     int result{0};
     DO(NUM_BUTTONS) {result |= state->keys[i] << i;}
-    //for (uint8_t i{0}; i < NUM_BUTTONS; ++i) { result |= state->keys[i] << i; }
     return result;
 }
+void update_buttons(void) {DO(NUM_BUTTONS) {buttons[i].update();}}
+bool valid_letter(char c) {return (c >= '0' && c <= '9') || (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z');}
 
-void update_buttons(void)
-{
-    // read 4 pins and update internal button states
-    DO(NUM_BUTTONS) {buttons[i].update();}
-    //for (uint8_t i{0}; i < NUM_BUTTONS; ++i) {buttons[i].update();}
-}
-
-void print_letters(void)
-{
-    Serial.println(letters);
-}
-
-bool valid_letter(char c)
-{
-    // return true only for [A-Za-z0-9]
-    if (c >= '0' && c <= '9') return true;
-    if (c >= 'A' && c <= 'Z') return true;
-    if (c >= 'a' && c <= 'z') return true;
-    return false;
-}
-
+// I/O
 void customize_keys(void)
 {
     // customize letter:button mapping
@@ -54,7 +35,7 @@ void customize_keys(void)
         letters[i] = valid_letter(newLetters[i]) ? newLetters[i] : letters[i];
     }
     Serial.print(F("replaced letters with "));
-    print_letters();
+    Serial.println(letters);
 }
 
 void update_serial(void)
@@ -80,7 +61,7 @@ void update_serial(void)
             Serial.println(micros() - timeSerialArrived); // respond with T3 - T2
             break;
         case 'L': customize_keys(); break;
-        case 'l': print_letters(); break;
+        case 'l': Serial.println(letters); break;
         default: break;
         }
     }
