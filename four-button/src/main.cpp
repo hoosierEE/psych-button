@@ -9,7 +9,9 @@
 //      4. Server repeats steps 1-3 often enough to be statistically meaningful
 
 #include <SimpleSwitch.h> // debounces a pin; provides update(), pressed(), released() methods
-// "Do" the loop body `n` times, with capture of loop index `i` as local variable.
+#include <CapacitiveSensor.h> // for home button
+
+// perform loop body n times, with capture of loop index i
 #define DO(n) for(int i=0,_n=(n); i<_n;++i)
 
 // TIMING
@@ -19,10 +21,10 @@ elapsedMicros outputTimer; // determines output data rate
 // MODEL
 const uint8_t NUM_BUTTONS{4};
 char l[]{"wxyz"}; // default keyboard TODO make sure "string" notation works with array accesses
-char h[]{"_-"}; // home button down(_) or up(-)
+char h[]{"_-."}; // home button down(_), up(-), or no change(.)
 // buttons connect to TeensyLC pins 2,3,4,5
 SimpleSwitch buttons[NUM_BUTTONS]{SimpleSwitch(2),SimpleSwitch(3),SimpleSwitch(4),SimpleSwitch(5)};
-struct KeyState {bool keys[NUM_BUTTONS],changed;} ks;
+struct KeyState {bool keys[NUM_BUTTONS],changed; uint8_t home;} ks;
 
 // FUNCTIONS
 bool valid_letter(char c){return ((c>='0'&&c<='9')||(c>='A'&&c<='Z')||(c>='a'&&c<='z'));} // true for [09AZaz]
@@ -30,7 +32,34 @@ bool valid_letter(char c){return ((c>='0'&&c<='9')||(c>='A'&&c<='Z')||(c>='a'&&c
 // I/O
 void update_buttons(void){DO(NUM_BUTTONS){buttons[i].update();}} // update buttons with pin readings
 
-void update_touch(void){}
+void update_touch(KeyState *k)
+{
+    static uint8_t idx{0}; // ring buffer index
+    const long THRESH{200};
+    const uint8_t SAMPLES{30};
+    static long rb[SAMPLES]{0};
+    rb[idx%SAMPLES] = cs.capacitiveSenseor(SAMPLES); // update ring buffer
+    idx++; // update index into ring buffer
+    long long sum,avg;
+    DO(30){sum+=rb[i];}
+    avg = sum / float(SAMPLES);
+
+    // update KeyState
+    if ((rb[idx]-avg)>THRESH) {
+        // finger down on home button
+        k->changed |= true;
+        k->home = 0;
+    }
+    else if ((avg-rb[idx])>THRESH) {
+        // finger lifts off home
+        k->changed |= true;
+        k->home = 1;
+    }
+    else {
+        // no change
+        k->home = 2;
+    }
+}
 
 void customize_keys(void)
 {
@@ -82,9 +111,9 @@ void render_output(KeyState *k)
 		// Serial output when button k changes (press OR release)
 		if (k->changed) {
 			k->changed = false; // reset
-			const uint8_t BLEN{9};
+			const uint8_t BLEN{11};
 			char buf[BLEN]={0}; // holds an array of null terminators
-			snprintf(buf,BLEN,"%d %d %d %d\n",k->keys[0],k->keys[1],k->keys[2],k->keys[3]);
+			snprintf(buf,BLEN,"%d %d %d %d %c\n",k->keys[0],k->keys[1],k->keys[2],k->keys[3],h[k->home]);
 			Serial.print(buf);
 		}
 	}
@@ -100,6 +129,7 @@ void loop() {
 	// UPDATE
 	// Gather input data as fast as possible.
 	// Inputs: buttons, Serial
+    update_touch(&ks);
 	update_buttons();
 	read_serial();
 
