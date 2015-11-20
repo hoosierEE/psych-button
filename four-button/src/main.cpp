@@ -25,6 +25,7 @@ char h[]{"_-."}; // home button down(_), up(-), or no change(.)
 // buttons connect to TeensyLC pins 2,3,4,5
 SimpleSwitch buttons[NUM_BUTTONS]{SimpleSwitch(2),SimpleSwitch(3),SimpleSwitch(4),SimpleSwitch(5)};
 struct KeyState {bool keys[NUM_BUTTONS],changed; uint8_t home;} ks;
+CapacitiveSensor cs(22,23);
 
 // FUNCTIONS
 bool valid_letter(char c){return ((c>='0'&&c<='9')||(c>='A'&&c<='Z')||(c>='a'&&c<='z'));} // true for [09AZaz]
@@ -38,7 +39,7 @@ void update_touch(KeyState *k)
     const long THRESH{200};
     const uint8_t SAMPLES{30};
     static long rb[SAMPLES]{0};
-    rb[idx%SAMPLES] = cs.capacitiveSenseor(SAMPLES); // update ring buffer
+    rb[idx%SAMPLES] = cs.capacitiveSensor(SAMPLES); // update ring buffer
     idx++; // update index into ring buffer
     long long sum,avg;
     DO(30){sum+=rb[i];}
