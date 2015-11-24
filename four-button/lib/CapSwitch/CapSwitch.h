@@ -6,62 +6,60 @@
 
 class CapSwitch {
  public:
-    CapSwitch(uint8_t _pin) : pin(_pin), BUFLEN(30), THRESH(500), buf{0}, ready(true), hl(false), lh(false), val(0) {}
+  CapSwitch(uint8_t _pin) :
+  pin(_pin), BUFLEN(30), THRESH(500), buf{0}, val(0), idx(0), ready(true), hl(false), lh(false) {}
 
-    void update(void)
-    {
-        // Okay to update the value returned by "pressed()".
-        if (ready) {
-            val = touchRead(pin);
-            ready = false; // reset by get_edge()
+  void update(void)
+  {
+    // Okay to update the value returned by "pressed()".
+    if (ready) {
+      ready = false; // reset by get_edge()
+      val = touchRead(pin);
 
-            // transitions
-            // hl true when value decreases by THRESH
-            // lh true when value increases by THRESH
-            avg = calc_avg(); // TODO write this
-            // TODO double check math
-            hl = abs(avg - val) > THRESH;
-            lh = abs(val - avg) > THRESH;
-            static int idx{0};
-            idx = (1 + idx) % BUFLEN;
-            int sum,avg;
-            buf[idx] = val;
-            for (uint8_t i=0; i<30; ++i) {
-                sum += buf[i];
-            }
+      // update ring buffer
+      buf[++idx%BUFLEN] = val;
 
-            //hl = previousState && !val; // reset in pressed()
-            //lh = !previousState && val; // reset in released()
-        }
+      // get transitions
+      double avg = calc_avg(); // TODO write this
+      hl = avg - val > THRESH; // value dropped by THRESH
+      lh = val - avg > THRESH; // value raised by THRESH
 
-        // Remember switch state.
-        //previousState = val;
+      //hl = previousState && !val; // reset in pressed()
+      //lh = !previousState && val; // reset in released()
+      // Remember switch state.
+      //previousState = val;
     }
+  }
 
-    int get_raw(void)
-    {
-        return val;
-    }
-
-    bool pressed(void) {return get_edge(lh);} 
-    bool released(void) {return get_edge(hl);}
+  int get_raw(void) { return val; }
+  bool pressed(void) { return get_edge(lh); } 
+  bool released(void) { return get_edge(hl); }
 
  private:
-    // accept an edge transition by ref and reset it without modifying other edge
-    bool get_edge(bool &edge)
-    {
-        bool t = edge;
-        edge = false;
-        ready = true;
-        return t;
-    }
 
-    uint8_t pin;
-    const uint8_t BUFLEN;
-    const int THRESH;
-    int buf[30];
-    bool ready,hl,lh;
-    int val;
+  // average of buf
+  double calc_avg(void)
+  {
+    int sum{0};
+    for (uint8_t i = 0; i < BUFLEN; ++i)  sum += buf[i]; 
+    return double(sum)/double(BUFLEN);
+  }
+
+  // return true if the specified transition occurred,
+  // resetting it (to be false) in the process
+  bool get_edge(bool &edge)
+  {
+    bool t = edge;
+    edge = false;
+    ready = true;
+    return t;
+  }
+
+  uint8_t pin;
+  const uint8_t BUFLEN;
+  const int THRESH;
+  int buf[30],val,idx;
+  bool ready,hl,lh;
 };
 
 #endif // CAP_SWITCH_H
