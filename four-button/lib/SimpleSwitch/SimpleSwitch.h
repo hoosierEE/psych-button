@@ -49,19 +49,15 @@ class SimpleSwitch
             }
         }
 
-        // return true once, following (update() and switch-press)
-        bool pressed() { return getTransition(hiLoTransition); }
-        // return true once, following (update() and switch-release)
-        bool released() { return getTransition(loHiTransition); }
-
-        // Return the raw button state, which is subject to bounce.
-        bool getState() { return currentState; }
-
-    private:
         // Return true once, then always false until next valid transition.  Sometimes called
         // an "immediate" debounce, because it responds to the first transition and ignores further
         // transitions for a set period.
-        //
+        bool pressed() { return getTransition(hiLoTransition); }
+        bool released() { return getTransition(loHiTransition); }
+
+        bool getState() { return currentState; } // subject to bounce
+
+    private:
         // Takes an edge (rising or falling) BY REFERENCE and resets it.
         // Edge remains false until next update().
         bool getTransition(bool& edge)
@@ -72,17 +68,11 @@ class SimpleSwitch
             return t;
         }
 
-        bool acceptNextPress;
-        bool currentState;
-        bool previousState;
-        bool hiLoTransition;
-        bool loHiTransition;
+        bool acceptNextPress, currentState, previousState, hiLoTransition, loHiTransition;
         uint8_t pin;
-        uint32_t currentTime;
-        uint32_t previousTime;
+        uint32_t currentTime, previousTime;
         const uint32_t DEBOUNCE_INTERVAL{10000}; // 10ms
 
 };
 
 #endif // __SIMPLESWITCH_H__
-

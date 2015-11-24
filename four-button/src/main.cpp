@@ -16,32 +16,28 @@
 #define DO(n) for(int i=0,_n=(n); i<_n;++i)
 
 // TIMING
-const uint16_t LOOP_TIME{10000}; // value in microseconds
-elapsedMicros outputTimer; // determines output data rate
+const uint16_t LOOP_TIME{10000}; // in microseconds
+elapsedMicros outputTimer; // data rate
 
 // MODEL
 const uint8_t NUM_BUTTONS{4};
-char l[]{"wxyz"}; // default keyboard TODO make sure "string" notation works with array accesses
-char h[]{"_-."}; // home button down(_), up(-), or no change(.)
-struct KeyState {bool keys[NUM_BUTTONS],changed; uint8_t homebutton;} ks;
+char l[]{"wxyz"}; // default keyboard letters
+char h[]{"_"}; // home button key '_'
+struct KeyState {bool keys[NUM_BUTTONS],changed,homebutton;} ks;
 
 // HARDWARE CONNECTIONS
 SimpleSwitch buttons[NUM_BUTTONS]{SimpleSwitch(2),SimpleSwitch(3),SimpleSwitch(4),SimpleSwitch(5)}; // mech. switches
 CapSwitch cap(15); // capacitive 'switch' at the given pin
 
-// FUNCTIONS
 bool valid_letter(char c){return ((c>='0'&&c<='9')||(c>='A'&&c<='Z')||(c>='a'&&c<='z'));} // true for [09AZaz]
-
-// I/O
 void update_buttons(void){DO(NUM_BUTTONS){buttons[i].update();}} // update buttons with pin readings
 void update_touch(void) {cap.update();}
-
 void customize_keys(void)
 {
     // Keyboard letter customization.
     // Power-cycling restores default (wxyz).
-    char nl[4]; // new letters
-    Serial.readBytes(nl,NUM_BUTTONS+1);
+    char nl[NUM_BUTTONS]; // new letters
+    Serial.readBytes(nl,NUM_BUTTONS+1); // utilizes Serial.setTimeout() default (1000ms)
     DO(NUM_BUTTONS){l[i] = valid_letter(nl[i]) ? nl[i] : l[i];}
     Serial.print("replaced letters with ");
     Serial.println(l);
@@ -49,59 +45,57 @@ void customize_keys(void)
 
 void read_serial(void)
 {
-    // process incoming commands from the Serial buffer, if any
-    // accepts the following 1-letter commands:
-    // T (Time)
-    // l (list letters)
-    // L (change letters)
+    // Consume and process at most 1 command from the Serial buffer.
     uint32_t t2{micros()};
     if (Serial.available()) {
         switch (Serial.read()) {
-        case 'T': Serial.println(micros() - t2); break; // respond with T3 - T2
-        case 'L': customize_keys(); break;
-        case 'l': Serial.println(l); break;
+        case 'T': Serial.println(micros() - t2); break; // Time: T3 - T2
+        case 'L': customize_keys(); break; // L (change letters)
+        case 'l': Serial.println(l); break; // l (list letters)
+        case 'c': Serial.println(cap.get_raw()); break; // TODO: test/debug
+        case 'a': Serial.println(cap.get_avg()); break; // TODO: test/debug
         default: break;
         }
     }
 }
 
-void render_output(KeyState *k) // TODO: refactor so this is truly output-only
+KeyState update_state(KeyState k, KeyState o)
 {
-    // Update the data (KeyState)
+    if (cap.pressed())  {
+        k.changed = true;
+        k.homebutton = true;
+    }
+    if (cap.released()) {
+        k.changed = true;
+        k.homebutton = false;
+    }
+    if (k.homebutton == o.homebutton) { k.changed = false; } // ugly hack prevents retriggering
     DO(NUM_BUTTONS) {
-        if (buttons[i].pressed()) {
-            k->changed = true;
-            k->keys[i] = true;
-            // Send keyboard letter with corresponding button press.
-            Keyboard.press(l[i]);
-            Serial.println(cap.get_raw());
-        }
-        if (buttons[i].released()) {
-            k->changed = true;
-            k->keys[i] = false;
-            // Release keyboard letter with corresponding button release.
-            Keyboard.release(l[i]);
-        }
+        if (buttons[i].pressed())  { k.changed = true; k.keys[i] = true; }
+        if (buttons[i].released()) { k.changed = true; k.keys[i] = false; }
     }
+    return k;
+}
 
-    k->homebutton = 2; // assume no change
-    if (cap.pressed()) {
-        k->homebutton = 0;
-        k->changed = true;
-    } else if (cap.released()) {
-        k->homebutton = 1;
-        k->changed = true;
+void render_keyboard(const KeyState &kn, const KeyState &ko)
+{
+    // 'press' if old was low and new is high
+    DO(NUM_BUTTONS) {
+        if ((kn.keys[i]) && (!ko.keys[i])) Keyboard.press(l[i]);
+        if ((!kn.keys[i]) && (ko.keys[i])) Keyboard.release(l[i]);
     }
+    if (kn.homebutton && !ko.homebutton) Keyboard.press(h[0]);
+    if (!kn.homebutton && ko.homebutton) Keyboard.release(h[0]);
+}
 
-    // print if changed
-    if (k->changed) {
-        k->changed = false; // reset
-        const uint8_t BLEN{11};
-        char buf[BLEN]={0}; // holds an array of null terminators
-        snprintf(buf,BLEN,"%d %d %d %d %c\n",
-                 k->keys[0],k->keys[1],k->keys[2],k->keys[3],h[k->homebutton]);
-        Serial.print(buf);
-    }
+void render_serial(const KeyState & k)
+{
+    const uint8_t BLEN{NUM_BUTTONS * 2 + sizeof(".\n\0")}; // ~13
+    char buf[BLEN]{0}; // begin with an array of '\0'
+    // print button states
+    snprintf(buf,BLEN,"%d %d %d %d %d\n",
+             k.keys[0],k.keys[1],k.keys[2],k.keys[3],k.homebutton);
+    Serial.print(buf);
 }
 
 // PROGRAM
@@ -111,18 +105,32 @@ void setup() {
 }
 
 void loop() {
-    // UPDATE
-    // Gather input data as fast as possible.
-    // Inputs: buttons, Serial
+    // Gather input data at maximum rate.
+    // Inputs: buttons, touch, Serial
     update_buttons();
     update_touch();
     read_serial();
 
-    // RENDER
-    // Send data out at a controlled rate.
-    // Outputs: Serial, Keyboard
+    // Update state and render output at a controlled rate.
     if (outputTimer >= LOOP_TIME) {
         outputTimer -= LOOP_TIME;
-        render_output(&ks);
+        // UPDATE
+        KeyState oldks = ks;
+        ks = update_state(ks,oldks); // Update internal state
+        // RENDER
+        if (ks.changed) {
+            ks.changed = false; // reset
+            render_serial(ks); // Send data out at a controlled rate.
+            render_keyboard(ks,oldks);
+        }
     }
+    // Alternatively, UPDATE and RENDER could be done at different rates:
+    // if (stateTimer >= STATE_TIME) {
+    //     stateTimer -= STATE_TIME;
+    //     update_state(ks);
+    // }
+    // if (renderTimer >= RENDER_TIME) {
+    //     renderTimer -= RENDER_TIME;
+    //     render_serial(ks); // Send data out at a controlled rate.
+    // }
 }
