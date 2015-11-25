@@ -23,15 +23,16 @@ elapsedMicros outputTimer; // data rate
 const uint8_t NUM_BUTTONS{4};
 char l[]{"wxyz"}; // default keyboard letters
 char h[]{"_"}; // home button key '_'
-struct KeyState {bool keys[NUM_BUTTONS],changed,homebutton;} ks;
+struct KeyState { bool keys[NUM_BUTTONS],changed,homebutton; } ks;
 
 // HARDWARE CONNECTIONS
-SimpleSwitch buttons[NUM_BUTTONS]{SimpleSwitch(2),SimpleSwitch(3),SimpleSwitch(4),SimpleSwitch(5)}; // mech. switches
+SimpleSwitch buttons[NUM_BUTTONS]{
+    SimpleSwitch(2),SimpleSwitch(3),SimpleSwitch(4),SimpleSwitch(5) }; // mech. switches
 CapSwitch cap(15); // capacitive 'switch' at the given pin
 
-bool valid_letter(char c){return ((c>='0'&&c<='9')||(c>='A'&&c<='Z')||(c>='a'&&c<='z'));} // true for [09AZaz]
-void update_buttons(void){DO(NUM_BUTTONS){buttons[i].update();}} // update buttons with pin readings
-void update_touch(void) {cap.update();}
+bool valid_letter(char c) { return ((c>='0'&&c<='9')||(c>='A'&&c<='Z')||(c>='a'&&c<='z')); } // true for [09AZaz]
+void update_buttons(void) { DO(NUM_BUTTONS){buttons[i].update();} } // update buttons with pin readings
+void update_touch(void) { cap.update(); }
 void customize_keys(void)
 {
     // Keyboard letter customization.
@@ -52,8 +53,6 @@ void read_serial(void)
         case 'T': Serial.println(micros() - t2); break; // Time: T3 - T2
         case 'L': customize_keys();              break; // L (change letters)
         case 'l': Serial.println(l);             break; // l (list letters)
-        case 'c': Serial.println(cap.get_raw()); break; // TODO: test/debug
-        case 'a': Serial.println(cap.get_avg()); break; // TODO: test/debug
         default: break;
         }
     }
@@ -86,12 +85,11 @@ void render_keyboard(const KeyState &kn, const KeyState &ko)
 
 void render_serial(const KeyState & k)
 {
-    const uint8_t BLEN{NUM_BUTTONS * 2 + sizeof(".\n\0")}; // ~13
-    char buf[BLEN]{0}; // begin with an array of '\0'
-    // print button states
-    snprintf(buf,BLEN,"%d %d %d %d %d\n",
-             k.keys[0],k.keys[1],k.keys[2],k.keys[3],k.homebutton);
-    Serial.print(buf);
+    DO(NUM_BUTTONS) {
+        Serial.print(k.keys[i]);
+        Serial.print(" ");
+    }
+    Serial.println(k.homebutton);
 }
 
 // PROGRAM
