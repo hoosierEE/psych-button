@@ -39,35 +39,11 @@ The results from this test is a list of 100 numbers, corresponding to timing mea
 
 ![](https://raw.githubusercontent.com/hoosierEE/psych-button/master/examples/round_trip_timing.png)
 
-### Button Encoding
-Since we have 4 buttons, we can represent "pressed" with a 1 and "not pressed" with a 0, and encode all 4 button values in a single byte:
-
-| State                   | button 3 | button 2 | button 1 | button 0 | Keyboard representation |
-|-------------------------|----------|----------|----------|----------|:-----------------------:|
-| no buttons pressed      | 0        | 0        | 0        | 0        |                         |
-| button 0 pressed        | 0        | 0        | 0        | 1        |      <kbd>w</kbd>       |
-| button 1 pressed        | 0        | 0        | 1        | 0        |      <kbd>x</kbd>       |
-| buttons 0 1 pressed     | 0        | 0        | 1        | 1        |                         |
-| button 2 pressed        | 0        | 1        | 0        | 0        |      <kbd>y</kbd>       |
-| buttons 0 2 pressed     | 0        | 1        | 0        | 1        |                         |
-| buttons 1 2 pressed     | 0        | 1        | 1        | 0        |                         |
-| buttons 0 1 2 pressed   | 0        | 1        | 1        | 1        |                         |
-| button 3 pressed        | 1        | 0        | 0        | 0        |      <kbd>z</kbd>       |
-| buttons 0 3 pressed     | 1        | 0        | 0        | 1        |                         |
-| (etc.)                  | 1        | 0        | 1        | 0        |                         |
-| (etc.)                  | 1        | 0        | 1        | 1        |                         |
-| (etc.)                  | 1        | 1        | 0        | 0        |                         |
-| (etc.)                  | 1        | 1        | 0        | 1        |                         |
-| (etc.)                  | 1        | 1        | 1        | 0        |                         |
-| all buttons pressed     | 1        | 1        | 1        | 1        |                         |
-
-Serial interface updates whenever there is a change in the state of any button (either pressed or released).
-
-The Keyboard interface sends a `keydown` event followed by a `keyup` event when a button is first pressed.
-
 Usage (Keyboard)
 ----------------
-To use a response box as a USB keyboard, plug and play.  By default, the 4 buttons correspond to <kbd>w</kbd>, <kbd>a</kbd>, <kbd>s</kbd>, and <kbd>d</kbd> keyboard events.  Open a text editor and use the response box to "type" letters.
+The Keyboard interface sends a `keydown` event when a button is pressed, or a `keyup` event when it is released.
+
+The Keyboard interface is plug and play.  By default, the 4 (or 8) buttons correspond to <kbd>w</kbd>, <kbd>x</kbd>, <kbd>y</kbd>, and <kbd>z</kbd> keyboard events.  The "home" button prints a `_` (underbar).  Open a text editor and use the response box to "type" letters.
 
 | button | key          |
 |--------|:------------:|
@@ -76,27 +52,38 @@ To use a response box as a USB keyboard, plug and play.  By default, the 4 butto
 | 2      | <kbd>y</kbd> |
 | 3      | <kbd>z</kbd> |
 
+> Note: the 8-button box has the default letter set `abcdefgh`
+
 Usage (Serial)
 --------------
+When any button changes, the Serial interface responds by printing the state of all the buttons on a single line.
+
 To use the serial interface, open a serial terminal on your computer using a program such as [pyserial](https://github.com/pyserial/pyserial).  Use the following settings:
 
-* 115200 baud
+* 9600 baud
 * 8 data bits
 * no parity
 * 1 stop bit
 
 Pressing and holding the `b0` button (and no others) will result in one line of output:
 
-    1 0 0 0
+    1 0 0 0 0
 
 Meanwhile, if you press the `b3` button, while continuing to hold `b0`, the next output will be:
 
-    1 0 0 1
+    1 0 0 1 0
 
 Finally, releasing the `b3` button, then releasing the `b0` button, will produce this output:
 
-    0 0 0 1
-    0 0 0 0
+    0 0 0 1 0
+    0 0 0 0 0
+
+The eight-button box is similar:
+
+    0 0 0 0 0 0 0 0 0
+    0 1 0 0 0 0 0 0 0
+
+> Note: the "home" button is the last value.
 
 Notes
 -----
