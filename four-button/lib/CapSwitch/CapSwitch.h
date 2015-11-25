@@ -1,3 +1,4 @@
+
 // CapSwitch.h
 // Wraps a Teensy (LC, 3.x) touch-enabled pin with a button interface.
 
@@ -7,8 +8,7 @@
 
 class CapSwitch {
  public:
- CapSwitch(uint8_t _pin) :
-    pin(_pin), THRESH(512), buf{0}, val(0), idx(0), ready(true), hl(false), lh(false) {}
+ CapSwitch(uint8_t _pin) : pin(_pin),THRESH(512){}
 
     void update(void)
     {
@@ -17,25 +17,33 @@ class CapSwitch {
             ready = false; // reset by reset_edge()
             val = touchRead(pin);
             buf[++idx%BUFLEN] = val; // update ring buffer
-            double avg = calc_avg(); // get transitions
+            double avg = get_avg(); // get transitions
             hl = avg - val > THRESH; // capacitance decreased
             lh = val - avg > THRESH; // capacitance increased
         }
     }
 
-    int get_raw(void)    { return val; }
-    double get_avg(void) { return calc_avg(); }
-    bool pressed(void)   { return reset_edge(lh); }
-    bool released(void)  { return reset_edge(hl); }
-
- private:
     // average of the buffer
-    double calc_avg(void)
+    double get_avg(void)
     {
         double sum{0};
         for (uint8_t i=0;i<BUFLEN;++i) { sum+=buf[i]; }
         return sum/double(BUFLEN);
     }
+
+    int get_raw(void) { return val; }
+
+    bool pressed(void)
+    {
+        return reset_edge(lh);
+    }
+
+    bool released(void)
+    {
+        return reset_edge(hl);
+    }
+
+ private:
 
     // return true if the specified transition occurred,
     // setting it to false the process
@@ -48,11 +56,11 @@ class CapSwitch {
     }
 
     uint8_t pin;
-    static const uint8_t BUFLEN{7};
     const int THRESH;
-    int buf[BUFLEN];
-    int val,idx;
-    bool ready,hl,lh;
+    static const uint8_t BUFLEN{7};
+    int buf[BUFLEN]{0};
+    int val,idx{0};
+    bool ready,hl,lh{false};
 };
 
 #endif // CAP_SWITCH_H

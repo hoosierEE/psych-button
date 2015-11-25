@@ -50,8 +50,8 @@ void read_serial(void)
     if (Serial.available()) {
         switch (Serial.read()) {
         case 'T': Serial.println(micros() - t2); break; // Time: T3 - T2
-        case 'L': customize_keys(); break; // L (change letters)
-        case 'l': Serial.println(l); break; // l (list letters)
+        case 'L': customize_keys();              break; // L (change letters)
+        case 'l': Serial.println(l);             break; // l (list letters)
         case 'c': Serial.println(cap.get_raw()); break; // TODO: test/debug
         case 'a': Serial.println(cap.get_avg()); break; // TODO: test/debug
         default: break;
@@ -61,15 +61,10 @@ void read_serial(void)
 
 KeyState update_state(KeyState k, KeyState o)
 {
-    if (cap.pressed())  {
-        k.changed = true;
-        k.homebutton = true;
-    }
-    if (cap.released()) {
-        k.changed = true;
-        k.homebutton = false;
-    }
-    if (k.homebutton == o.homebutton) { k.changed = false; } // ugly hack prevents retriggering
+    if (cap.pressed())  { k.changed = true; k.homebutton = true; }
+    if (cap.released()) { k.changed = true; k.homebutton = false; }
+    // prevent retriggering - TODO: CapSwitch should provide this by default
+    if (k.homebutton == o.homebutton) { k.changed = false; }
     DO(NUM_BUTTONS) {
         if (buttons[i].pressed())  { k.changed = true; k.keys[i] = true; }
         if (buttons[i].released()) { k.changed = true; k.keys[i] = false; }
@@ -80,9 +75,10 @@ KeyState update_state(KeyState k, KeyState o)
 void render_keyboard(const KeyState &kn, const KeyState &ko)
 {
     // 'press' if old was low and new is high
+    // 'release' if old was high and new is low
     DO(NUM_BUTTONS) {
-        if ((kn.keys[i]) && (!ko.keys[i])) Keyboard.press(l[i]);
-        if ((!kn.keys[i]) && (ko.keys[i])) Keyboard.release(l[i]);
+        if (kn.keys[i] && !ko.keys[i]) Keyboard.press(l[i]);
+        if (!kn.keys[i] && ko.keys[i]) Keyboard.release(l[i]);
     }
     if (kn.homebutton && !ko.homebutton) Keyboard.press(h[0]);
     if (!kn.homebutton && ko.homebutton) Keyboard.release(h[0]);
