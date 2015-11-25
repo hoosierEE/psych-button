@@ -18,8 +18,8 @@ class CapSwitch {
             val = touchRead(pin);
             buf[++idx%BUFLEN] = val; // update ring buffer
             double avg = calc_avg(); // get transitions
-            hl = avg - val > THRESH; // relatively pressed
-            lh = val - avg > THRESH; // relatively released
+            hl = avg - val > THRESH; // capacitance decreased
+            lh = val - avg > THRESH; // capacitance increased
         }
     }
 
