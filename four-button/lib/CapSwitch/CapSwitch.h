@@ -13,16 +13,19 @@ class CapSwitch {
     void update(void)
     {
         // Produce new transition values IFF previous value has been consumed.
-        if (ready) {
-            ready = false; // reset by reset_edge()
-            val = touchRead(pin);
-            buf[++idx%BUFLEN] = val; // update ring buffer
-            double avg = get_avg(); // get transitions
-            hl = avg - val > THRESH; // capacitance decreased
-            lh = val - avg > THRESH; // capacitance increased
-        }
+        val = touchRead(pin);
+        buf[++idx%BUFLEN] = val; // update ring buffer
+        double avg = get_avg(); // get transitions
+        // if the capacitance increased AND the state was previously low,
+        // change state to HIGH (and vice versa)
+        if ((val - avg > THRESH) && !bstate) bstate = true; // TODO: verify
+        if ((avg - val > THRESH) && bstate) bstate = false;
     }
 
+    bool pressed(void) { return bstate == true; }
+    bool released(void) { return bstate != true; }
+
+ private:
     // average of the buffer
     double get_avg(void)
     {
@@ -30,37 +33,14 @@ class CapSwitch {
         for (uint8_t i=0;i<BUFLEN;++i) { sum+=buf[i]; }
         return sum/double(BUFLEN);
     }
-
-    int get_raw(void) { return val; }
-
-    bool pressed(void)
-    {
-        return reset_edge(lh);
-    }
-
-    bool released(void)
-    {
-        return reset_edge(hl);
-    }
-
- private:
-
-    // return true if the specified transition occurred,
-    // setting it to false the process
-    bool reset_edge(bool &edge)
-    {
-        bool t = edge;
-        edge = false;
-        ready = true;
-        return t;
-    }
-
     uint8_t pin;
     const int THRESH;
     static const uint8_t BUFLEN{7};
     int buf[BUFLEN]{0};
-    int val,idx{0};
-    bool ready,hl,lh{false};
+    int val{0};
+    int idx{0};
+    bool bstate{false};
+    bool ready{false};
 };
 
 #endif // CAP_SWITCH_H
