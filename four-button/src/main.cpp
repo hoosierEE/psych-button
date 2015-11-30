@@ -58,14 +58,13 @@ void read_serial(void)
     }
 }
 
-KeyState update_state(KeyState k, KeyState o)
+KeyState update_state(KeyState k)
 {
-    if (cap.pressed())  { k.changed = true; k.homebutton = true; }
+    k.changed = false; // assume no change
+    if (cap.pressed()) { k.changed = true; k.homebutton = true; }
     if (cap.released()) { k.changed = true; k.homebutton = false; }
-    // prevent retriggering - TODO: CapSwitch should provide this by default
-    if (k.homebutton == o.homebutton) { k.changed = false; }
     DO(NUM_BUTTONS) {
-        if (buttons[i].pressed())  { k.changed = true; k.keys[i] = true; }
+        if (buttons[i].pressed()) { k.changed = true; k.keys[i] = true; }
         if (buttons[i].released()) { k.changed = true; k.keys[i] = false; }
     }
     return k;
@@ -110,7 +109,7 @@ void loop() {
         outputTimer -= LOOP_TIME;
         // UPDATE
         KeyState oldks = ks;
-        ks = update_state(ks,oldks); // Update internal state
+        ks = update_state(ks); // Update internal state
         // RENDER
         if (ks.changed) {
             ks.changed = false; // reset

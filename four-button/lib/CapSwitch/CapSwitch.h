@@ -7,40 +7,50 @@
 #include <Arduino.h>
 
 class CapSwitch {
- public:
- CapSwitch(uint8_t _pin) : pin(_pin),THRESH(512){}
+public:
+CapSwitch(uint8_t _pin) : pin(_pin),THRESH(200){}
 
     void update(void)
     {
-        // Produce new transition values IFF previous value has been consumed.
         val = touchRead(pin);
         buf[++idx%BUFLEN] = val; // update ring buffer
-        double avg = get_avg(); // get transitions
-        // if the capacitance increased AND the state was previously low,
-        // change state to HIGH (and vice versa)
-        if ((val - avg > THRESH) && !bstate) bstate = true; // TODO: verify
-        if ((avg - val > THRESH) && bstate) bstate = false;
+        if (accept) {
+            double avg = get_avg();
+            if (val - avg > THRESH) { bstate = false; } // cap. increasing
+            if (avg - val > THRESH) { bstate = true; } // cap. decreasing
+            accept = false;
+            hilo = prev_state && !bstate;
+            lohi = bstate && !prev_state;
+        }
+        prev_state = bstate;
     }
 
-    bool pressed(void) { return bstate == true; }
-    bool released(void) { return bstate != true; }
+    bool pressed(void) { return reset_edge(hilo); }
+    bool released(void) { return reset_edge(lohi); }
 
- private:
-    // average of the buffer
+private:
+    bool reset_edge(bool& edge)
+    {
+        bool t = edge;
+        edge = false;
+        accept = true;
+        return t;
+    }
+
     double get_avg(void)
     {
         double sum{0};
         for (uint8_t i=0;i<BUFLEN;++i) { sum+=buf[i]; }
-        return sum/double(BUFLEN);
+        return sum/(double)BUFLEN;
     }
+
     uint8_t pin;
     const int THRESH;
     static const uint8_t BUFLEN{7};
     int buf[BUFLEN]{0};
-    int val{0};
-    int idx{0};
-    bool bstate{false};
-    bool ready{false};
+    int val,idx;
+    bool bstate,prev_state,hilo,lohi;
+    bool accept{true};
 };
 
 #endif // CAP_SWITCH_H
