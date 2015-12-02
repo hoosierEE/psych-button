@@ -46,27 +46,25 @@ class CapSwitch {
 
     void update(void)
     {
-        int val = touchRead(pin); // might want to modify update() to take a function pointer to
+        // might want to modify update() to take a function pointer to
         // enable other kinds of analog readings, e.g. analogRead(pin)
+        int val = touchRead(pin);
         static int idx{0};
         buf[++idx%BUFLEN] = val; // update ring buffer
-        if (accept) { // empty queue
+        if (accept) { // queue empty
             accept = false;
             double avg = get_avg();
             if (val - avg > THRESH) { bstate = false; } // cap. increasing
             if (avg - val > THRESH) { bstate = true; } // cap. decreasing
-            hilo = prev_state && !bstate;
-            lohi = bstate && !prev_state;
-            prev_state = bstate;
+            hilo = prev_state && !bstate; // falling edge
+            lohi = bstate && !prev_state; // rising edge
         }
+        prev_state = bstate;
     }
 
-    // might want something like this in the future
-    // int thresh(void) { return THRESH; }
-    // void set_thresh(int new_thresh)
-    // {
-    //     THRESH = new_thresh;
-    // }
+    // might want something like these in the future
+    // int get_thresh(void) { return THRESH; }
+    // void set_thresh(int new_thresh) {THRESH = new_thresh;}
 
     bool pressed(void) { return reset_edge(hilo); }
     bool released(void) { return reset_edge(lohi); }

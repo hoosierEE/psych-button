@@ -28,7 +28,7 @@ struct KeyState { bool keys[NUM_BUTTONS],changed,homebutton; } ks;
 // HARDWARE CONNECTIONS
 SimpleSwitch buttons[NUM_BUTTONS]{
     SimpleSwitch(2),SimpleSwitch(3),SimpleSwitch(4),SimpleSwitch(5) }; // mech. switches
-CapSwitch cap(15); // capacitive 'switch' at the given pin
+CapSwitch cap(23); // capacitive 'switch' at this pin
 
 bool valid_letter(char c) { return ((c>='0'&&c<='9')||(c>='A'&&c<='Z')||(c>='a'&&c<='z')); } // true for [09AZaz]
 void update_buttons(void) { DO(NUM_BUTTONS){buttons[i].update();} } // update buttons with pin readings
@@ -60,7 +60,7 @@ void read_serial(void)
 
 KeyState update_state(KeyState k)
 {
-    k.changed = false; // assume no change
+    // k.changed = false; // assume no change
     if (cap.pressed()) { k.changed = true; k.homebutton = true; }
     if (cap.released()) { k.changed = true; k.homebutton = false; }
     DO(NUM_BUTTONS) {
@@ -113,21 +113,23 @@ void loop() {
         outputTimer -= LOOP_TIME;
         // UPDATE
         KeyState oldks = ks;
-        ks = update_state(ks); // Update internal state
+        ks = update_state(ks);
         // RENDER
         if (ks.changed) {
-            ks.changed = false; // reset
-            render_serial(ks); // Send data out at a controlled rate.
+            ks.changed = false;
+            render_serial(ks);
             render_keyboard(ks,oldks);
         }
     }
     // Alternatively, UPDATE and RENDER could be done at different rates:
+    // // UPDATE
     // if (stateTimer >= STATE_TIME) {
     //     stateTimer -= STATE_TIME;
-    //     update_state(ks);
+    //     update_state(ks); // Update at one rate...
     // }
+    // // RENDER
     // if (renderTimer >= RENDER_TIME) {
     //     renderTimer -= RENDER_TIME;
-    //     render_serial(ks); // Send data out at a controlled rate.
+    //     render_serial(ks); // ...output at other rate.
     // }
 }

@@ -27,9 +27,9 @@ struct KeyState { bool keys[NUM_BUTTONS],changed,homebutton; } ks;
 
 // HARDWARE CONNECTIONS
 SimpleSwitch buttons[NUM_BUTTONS] {
-    SimpleSwitch(2),SimpleSwitch(3),SimpleSwitch(4),SimpleSwitch(5),
-        SimpleSwitch(6),SimpleSwitch(7),SimpleSwitch(8),SimpleSwitch(9) }; // mech. switches
-CapSwitch cap(15); // capacitive 'switch' at the given pin
+    SimpleSwitch(2),SimpleSwitch(3),SimpleSwitch(4),SimpleSwitch(5), // top row
+        SimpleSwitch(6),SimpleSwitch(7),SimpleSwitch(8),SimpleSwitch(9) }; // bottom row
+CapSwitch cap(23); // capacitive 'switch' at this pin
 
 bool valid_letter(char c) { return ((c>='0'&&c<='9')||(c>='A'&&c<='Z')||(c>='a'&&c<='z')); } // true for [09AZaz]
 void update_buttons(void) { DO(NUM_BUTTONS){buttons[i].update();} } // update buttons with pin readings
