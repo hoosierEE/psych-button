@@ -80,6 +80,10 @@ void render_keyboard(const KeyState &kn, const KeyState &ko)
     }
     if (kn.homebutton && !ko.homebutton) Keyboard.press(h[0]);
     if (!kn.homebutton && ko.homebutton) Keyboard.release(h[0]);
+    // It's possible this could be expressed more simply as:
+    // kn.keys[i] ? Keyboard.press(l[i]) : Keyboard.release(l[i])
+    // But it strikes me that a real-world key must be released before
+    // it can be pressed again.  Maybe OOP is getting to me...
 }
 
 void render_serial(const KeyState & k)
