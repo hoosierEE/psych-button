@@ -26,9 +26,9 @@ char h[]{"_"}; // home button key '_'
 struct KeyState { bool keys[NUM_BUTTONS],changed,homebutton; } ks;
 
 // HARDWARE CONNECTIONS
-SimpleSwitch buttons[NUM_BUTTONS] {
-    SimpleSwitch(2),SimpleSwitch(3),SimpleSwitch(4),SimpleSwitch(5), // top row
-        SimpleSwitch(6),SimpleSwitch(7),SimpleSwitch(8),SimpleSwitch(9) }; // bottom row
+SimpleSwitch buttons[NUM_BUTTONS]{
+    SimpleSwitch(2),SimpleSwitch(3),SimpleSwitch(4),SimpleSwitch(5)
+        SimpleSwitch(6),SimpleSwitch(7),SimpleSwitch(8),SimpleSwitch(9) }; // mech. switches
 CapSwitch cap(23); // capacitive 'switch' at this pin
 
 bool valid_letter(char c) { return ((c>='0'&&c<='9')||(c>='A'&&c<='Z')||(c>='a'&&c<='z')); } // true for [09AZaz]
@@ -37,7 +37,7 @@ void update_touch(void) { cap.update(); }
 void customize_keys(void)
 {
     // Keyboard letter customization.
-    // Power-cycling restores default (wxyz).
+    // Power-cycling restores default alphabet
     char nl[NUM_BUTTONS]; // new letters
     Serial.readBytes(nl,NUM_BUTTONS+1); // utilizes Serial.setTimeout() default (1000ms)
     DO(NUM_BUTTONS){l[i] = valid_letter(nl[i]) ? nl[i] : l[i];}
@@ -59,14 +59,13 @@ void read_serial(void)
     }
 }
 
-KeyState update_state(KeyState k, KeyState o)
+KeyState update_state(KeyState k)
 {
-    if (cap.pressed())  { k.changed = true; k.homebutton = true; }
+    // k.changed = false; // assume no change
+    if (cap.pressed()) { k.changed = true; k.homebutton = true; }
     if (cap.released()) { k.changed = true; k.homebutton = false; }
-    // prevent retriggering - TODO: CapSwitch should provide this by default
-    if (k.homebutton == o.homebutton) { k.changed = false; }
     DO(NUM_BUTTONS) {
-        if (buttons[i].pressed())  { k.changed = true; k.keys[i] = true; }
+        if (buttons[i].pressed()) { k.changed = true; k.keys[i] = true; }
         if (buttons[i].released()) { k.changed = true; k.keys[i] = false; }
     }
     return k;
@@ -82,11 +81,14 @@ void render_keyboard(const KeyState &kn, const KeyState &ko)
     }
     if (kn.homebutton && !ko.homebutton) Keyboard.press(h[0]);
     if (!kn.homebutton && ko.homebutton) Keyboard.release(h[0]);
+    // It's possible this could be expressed more simply as:
+    // kn.keys[i] ? Keyboard.press(l[i]) : Keyboard.release(l[i])
+    // But it strikes me that a real-world key must be released before
+    // it can be pressed again.  Maybe OOP is getting to me...
 }
 
 void render_serial(const KeyState & k)
 {
-    // print button states
     DO(NUM_BUTTONS) {
         Serial.print(k.keys[i]);
         Serial.print(" ");
@@ -112,21 +114,23 @@ void loop() {
         outputTimer -= LOOP_TIME;
         // UPDATE
         KeyState oldks = ks;
-        ks = update_state(ks,oldks); // Update internal state
+        ks = update_state(ks);
         // RENDER
         if (ks.changed) {
-            ks.changed = false; // reset
-            render_serial(ks); // Send data out at a controlled rate.
+            ks.changed = false;
+            render_serial(ks);
             render_keyboard(ks,oldks);
         }
     }
     // Alternatively, UPDATE and RENDER could be done at different rates:
+    // // UPDATE
     // if (stateTimer >= STATE_TIME) {
     //     stateTimer -= STATE_TIME;
-    //     update_state(ks);
+    //     update_state(ks); // Update at one rate...
     // }
+    // // RENDER
     // if (renderTimer >= RENDER_TIME) {
     //     renderTimer -= RENDER_TIME;
-    //     render_serial(ks); // Send data out at a controlled rate.
+    //     render_serial(ks); // ...output at other rate.
     // }
 }
