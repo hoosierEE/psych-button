@@ -27,7 +27,7 @@ struct KeyState { bool keys[NUM_BUTTONS],changed,homebutton; } ks;
 
 // HARDWARE CONNECTIONS
 SimpleSwitch buttons[NUM_BUTTONS]{
-    SimpleSwitch(2),SimpleSwitch(3),SimpleSwitch(4),SimpleSwitch(5)
+    SimpleSwitch(2),SimpleSwitch(3),SimpleSwitch(4),SimpleSwitch(5),
         SimpleSwitch(6),SimpleSwitch(7),SimpleSwitch(8),SimpleSwitch(9) }; // mech. switches
 CapSwitch cap(23); // capacitive 'switch' at this pin
 
