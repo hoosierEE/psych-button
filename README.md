@@ -10,9 +10,21 @@ Many times in psychological experiments, researchers wish to record button press
 
 This project centers around a USB keyboard with the added ability to accurately characterize the delay of its system.
 
-The device has a single USB cable but shows up as *two* separate USB devices: a **USB Keyboard** and a **USB Serial** interface.  The keyboard is essentially the same as a standard USB keyboard with the exception that instead of 108 or more keys, it only has 4 or 8.  The Serial interface is where things start to get interesting.  This interface provides button press data but *also* precise timing data.
+# Keyboard Quick Start
+To use as a USB keyboard, plug-and-play.  The default keys are:
 
-Recording data from the serial interface lets you calculate both the round-trip delay and the offset for the device+PC combo.
+* Four-button version (left-to-right)
+
+  * Top row: <kbd>w</kbd> <kbd>x</kbd> <kbd>y</kbd> <kbd>z</kbd>
+  * Metal: <kbd>_</kbd>
+
+* Eight-button version (left-to-right)
+
+  * Top row: <kbd>a</kbd> <kbd>b</kbd> <kbd>c</kbd> <kbd>d</kbd>
+  * Middle row: <kbd>e</kbd> <kbd>f</kbd> <kbd>g</kbd> <kbd>h</kbd>
+  * Metal: <kbd>_</kbd>
+
+> Note: if the home key (the metal pin near the center-bottom of the response box) is held, subsequent key presses will be shifted, e.g. 'a' will become 'A'.
 
 ### Timing Measurements
 Round-trip delay `d` is calculated as per the [SNTP protocol, section 5](https://tools.ietf.org/html/rfc4330#section-5):
@@ -58,7 +70,7 @@ The Keyboard interface is plug and play.  By default, the 4 (or 8) buttons corre
 | 2      | <kbd>y</kbd> |
 | 3      | <kbd>z</kbd> |
 
-> Note: the 8-button box has the default letter set `abcdefgh`
+> Note: the 8-button box has the default alphabet `abcdefgh`
 
 Usage (Serial)
 --------------
