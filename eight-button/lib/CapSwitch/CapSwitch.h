@@ -6,19 +6,18 @@
   Background:
   When an object (such as a finger) approaches a conductive surface or wire, the
   capacitance increases. More precisely, the capacitance is a function of distance:
-  Capacitance = 1 / (distance*distance)
+  Capacitance = 1 / (distance^2)
   This library keeps track of the average capacitance, and signals a button change
   event when the readings increase or decrease sharply with respect to the average.
   There is also a threshold built in to provide a form of hysteresis, so that small
   fluctuations do not cause false triggers.
-
-  Hence there are some parameters users of this library could tweak to change the
-  behavior of these "buttons".
+  There are some parameters users of this library could tweak to change the
+  behavior of these "buttons":
   1. There is currently just a single threshold value, which means the sensitivity
   is equal for both approaching and receding objects. Different values could be
   used for asymmetric thresholds.
   2. The size of the circular buffer is a tradeoff between noise immunity and memory
-  consumption.
+  use.
 
   Usage:
   1. Instantiate this class with a pin number (e.g. CapSwitch myCapSwitch(23); ).
@@ -38,10 +37,11 @@
 #ifndef CAP_SWITCH_H
 #define CAP_SWITCH_H
 
-class CapSwitch {
- public:
+class CapSwitch
+{
+public:
     // constructor requires touch-enabled pin number
- CapSwitch(uint8_t _pin) : pin(_pin),THRESH(200){}
+    CapSwitch(uint8_t _pin) : pin(_pin),THRESH(200){}
     ~CapSwitch(){}
 
     void update(void)
@@ -54,23 +54,22 @@ class CapSwitch {
         if (accept) { // queue empty
             accept = false;
             double avg = get_avg();
-            if (val - avg > THRESH) { bstate = false; } // cap. increasing
-            if (avg - val > THRESH) { bstate = true; } // cap. decreasing
-            hilo = prev_state && !bstate; // falling edge
-            lohi = bstate && !prev_state; // rising edge
+            cs = (avg-val>THRESH)||!(val-avg>THRESH);
+            fall = ps && !cs; // falling edge reset in pressed()
+            rise = cs && !ps; // rising edge reset in released()
         }
-        prev_state = bstate;
+        ps = cs;
     }
 
     // might want something like these in the future
     // int get_thresh(void) { return THRESH; }
     // void set_thresh(int new_thresh) {THRESH = new_thresh;}
+    bool pressed(void) { return reset_edge(fall); }
+    bool released(void) { return reset_edge(rise); }
 
-    bool pressed(void) { return reset_edge(hilo); }
-    bool released(void) { return reset_edge(lohi); }
+private:
 
- private:
-    bool reset_edge(bool& edge)
+    bool reset_edge(bool &edge)
     {
         bool t = edge;
         edge = false;
@@ -87,9 +86,9 @@ class CapSwitch {
 
     uint8_t pin;
     const int THRESH;
-    static const uint8_t BUFLEN{7};
+    static const uint8_t BUFLEN{7}; // ring buffer size
     int buf[BUFLEN]{0};
-    bool bstate,prev_state,hilo,lohi;
+    bool cs,ps,fall,rise;
     bool accept{true};
 };
 

@@ -51,21 +51,21 @@ public:
         int val = touchRead(pin);
         static int idx{0};
         buf[++idx%BUFLEN] = val; // update ring buffer
-        if (accept_next) { // queue empty
-            accept_next = false;
+        if (accept) { // queue empty
+            accept = false;
             double avg = get_avg();
-            current_state = (avg-val>THRESH)||!(val-avg>THRESH);
-            hilo = prev_state && !current_state; // falling edge reset in pressed()
-            lohi = current_state && !prev_state; // rising edge reset in released()
+            cs = (avg-val>THRESH)||!(val-avg>THRESH);
+            fall = ps && !cs; // falling edge reset in pressed()
+            rise = cs && !ps; // rising edge reset in released()
         }
-        prev_state = current_state;
+        ps = cs;
     }
 
     // might want something like these in the future
     // int get_thresh(void) { return THRESH; }
     // void set_thresh(int new_thresh) {THRESH = new_thresh;}
-    bool pressed(void) { return reset_edge(hilo); }
-    bool released(void) { return reset_edge(lohi); }
+    bool pressed(void) { return reset_edge(fall); }
+    bool released(void) { return reset_edge(rise); }
 
 private:
 
@@ -73,7 +73,7 @@ private:
     {
         bool t = edge;
         edge = false;
-        accept_next = true;
+        accept = true;
         return t;
     }
 
@@ -86,10 +86,10 @@ private:
 
     uint8_t pin;
     const int THRESH;
-    static const uint8_t BUFLEN{7};
+    static const uint8_t BUFLEN{7}; // ring buffer size
     int buf[BUFLEN]{0};
-    bool current_state,prev_state,hilo,lohi;
-    bool accept_next{true};
+    bool cs,ps,fall,rise;
+    bool accept{true};
 };
 
 #endif // CAP_SWITCH_H

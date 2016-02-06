@@ -1,9 +1,7 @@
 // SimpleSwitch.h
 // debounce for a polled switch
-// Copyright (c) 2014-2015 Trustees of Indiana University
 // Author: Alex Shroyer
 // Assumes a normally open momentary switch with less than 10ms of bounce.
-// Connect to a digital pin; uses internal pull-up resistor.
 
 #ifndef __SIMPLESWITCH_H__
 #define __SIMPLESWITCH_H__
@@ -12,41 +10,40 @@
 class SimpleSwitch
 {
 public:
-    // Default constructor. Takes a digital pin.
+    // Connect to a digital pin; uses internal pull-up resistor.
     SimpleSwitch(uint8_t _pin) : pin(_pin)
     {
-        // pin = _pin;
         pinMode(pin,INPUT_PULLUP);
-        prev_state = digitalRead(pin);
+        ps = digitalRead(pin);
     }
     ~SimpleSwitch() {}
 
     // update internal state
-    void update(uint32_t now = micros())
+    void update(void)
     {
         // Update after DEBOUNCE_INTERVAL or more microseconds.
-        if (now - prev_time >= DEBOUNCE_INTERVAL) {
-            prev_time += DEBOUNCE_INTERVAL;
-            current_state = digitalRead(pin);
-            // Okay to update the value returned by "pressed()".
-            if (accept_next) {
+        if (to >= DEBOUNCE_INTERVAL) {
+            to -= DEBOUNCE_INTERVAL
+            cs = digitalRead(pin);
+            if (accept_next) { // Okay to update the value returned by "pressed()".
                 accept_next = false;
-                hilo = prev_state && !current_state; // falling edge reset in pressed()
-                lohi = !prev_state && current_state; // rising edge reset in released()
+                fall = ps && !cs; // falling edge reset in pressed()
+                rise = !ps && cs; // rising edge reset in released()
             }
-
-            // Remember switch state.
-            prev_state = current_state;
+            ps = cs; // Remember switch state.
         }
     }
 
-    // Return true once, then always false until next valid transition.  Sometimes called
-    // an "immediate" debounce, because it responds to the first transition and ignores further
-    // transitions for a set period.
-    bool pressed() { return reset_edge(hilo); }
-    bool released() { return reset_edge(lohi); }
+    // Debounced getters:
+    // Return true once, then ignore subsequent changes until after DEBOUNCE_INTERVAL
+    // microseconds have elapsed.  This is sometimes called an "immediate" debounce,
+    // compared to other methods which require several reads in order to distinguish
+    // a valid state change from a bouncing switch.
+    bool pressed(void) { return reset_edge(fall); }
+    bool released(void) { return reset_edge(rise); }
 
-    bool getState() { return current_state; } // subject to bounce
+    // Raw bouncy getter: For daredevils, or if you want to see how bouncy a switch is.
+    bool getState(void) { return cs; }
 
 private:
 
@@ -62,8 +59,9 @@ private:
 
     uint8_t pin;
     bool accept_next{true};
-    bool current_state,prev_state,hilo,lohi;
-    uint32_t current_time,prev_time;
+    bool cs,ps,fall,rise; // current state, previous state, high-to-low, low-to-high
+    elapsedMicros to;
+    uint32_t prev; // previous time
     const uint32_t DEBOUNCE_INTERVAL{10000}; // 10ms
 };
 
