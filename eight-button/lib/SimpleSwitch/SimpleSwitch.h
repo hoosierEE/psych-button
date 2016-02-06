@@ -23,7 +23,7 @@ public:
     {
         // Update after DEBOUNCE_INTERVAL or more microseconds.
         if (to >= DEBOUNCE_INTERVAL) {
-            to -= DEBOUNCE_INTERVAL
+            to -= DEBOUNCE_INTERVAL;
             cs = digitalRead(pin);
             if (accept_next) { // Okay to update the value returned by "pressed()".
                 accept_next = false;
